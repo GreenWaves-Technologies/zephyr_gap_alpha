@@ -1,0 +1,77 @@
+/*
+ * Copyright (c) 2018 ETH Zurich, University of Bologna, GreenWaves Technologies
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <kernel_structs.h>
+#include <offsets.h>
+#include <toolchain.h>
+#include <linker/sections.h>
+#include <soc.h>
+
+/* exports */
+GTEXT(__soc_save_context)
+GTEXT(__soc_restore_context)
+GTEXT(__soc_is_irq)
+GTEXT(__soc_handle_irq)
+GTEXT(__soc_irq_unlock)
+
+/* Use ABI name of registers for the sake of simplicity */
+
+SECTION_FUNC(exception.other, __soc_save_context)
+	/* Save hardware loop registers to stack */
+	csrr t0, PULP_LPSTART0
+	csrr t1, PULP_LPEND0
+	csrr t2, PULP_LPCOUNT0
+	sw t0, __NANO_ESF_lpstart0_OFFSET(sp)
+	sw t1, __NANO_ESF_lpend0_OFFSET(sp)
+	sw t2, __NANO_ESF_lpcount0_OFFSET(sp)
+	csrr t0, PULP_LPSTART1
+	csrr t1, PULP_LPEND1
+	csrr t2, PULP_LPCOUNT1
+	sw t0, __NANO_ESF_lpstart1_OFFSET(sp)
+	sw t1, __NANO_ESF_lpend1_OFFSET(sp)
+	sw t2, __NANO_ESF_lpcount1_OFFSET(sp)
+
+	/* Return */
+	jalr x0, ra
+
+
+SECTION_FUNC(exception.other, __soc_restore_context)
+	/* Restore hardloop registers from stack */
+	lw t0, __NANO_ESF_lpstart0_OFFSET(sp)
+	lw t1, __NANO_ESF_lpend0_OFFSET(sp)
+	lw t2, __NANO_ESF_lpcount0_OFFSET(sp)
+	csrw PULP_LPSTART0, t0
+	csrw PULP_LPEND0, t1
+	csrw PULP_LPCOUNT0, t2
+	lw t0, __NANO_ESF_lpstart1_OFFSET(sp)
+	lw t1, __NANO_ESF_lpend1_OFFSET(sp)
+	lw t2, __NANO_ESF_lpcount1_OFFSET(sp)
+	csrw PULP_LPSTART1, t0
+	csrw PULP_LPEND1, t1
+	csrw PULP_LPCOUNT1, t2
+
+	/* Return */
+	jalr x0, ra
+
+
+/*
+ * SOC-specific function to handle pending IRQ number generating the interrupt.
+ *
+ */
+SECTION_FUNC(exception.other, __soc_handle_irq)
+	/* Return */
+	jalr x0, ra
+
+
+/*
+ * SOC-specific function to determine if the exception is the result of a
+ * an interrupt or an exception
+ * return 1 (interrupt) or 0 (exception)
+ */
+SECTION_FUNC(exception.other, __soc_is_irq)
+not_interrupt:
+	/* return */
+	jalr x0, ra

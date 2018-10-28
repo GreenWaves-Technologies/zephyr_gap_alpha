@@ -1,0 +1,6 @@
+if BOARD_GAPUINO
+
+config BOARD
+	default "gapuino"
+
+endif

@@ -1,0 +1,27 @@
+/*
+ * Copyright (c) 2018 ETH Zurich, University of Bologna, GreenWaves Technologies
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+
+#include <gap.dtsi>
+
+/ {
+	model = "gapuino";
+	compatible = "pulp,gapuino";
+
+	aliases {
+		uart-0 = &uart0;
+	};
+
+	chosen {
+		zephyr,console = &uart0;
+	};
+};
+
+&uart0 {
+	status = "ok";
+	current-speed = <115200>;
+};
