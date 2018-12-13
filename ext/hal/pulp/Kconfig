@@ -1,0 +1,4 @@
+config HAS_PULP_HAL
+	bool
+	depends on SOC_FAMILY_PULPV4
+		default y

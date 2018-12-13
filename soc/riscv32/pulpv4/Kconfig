@@ -1,0 +1,11 @@
+config SOC_FAMILY_PULPV4
+	bool
+	# omit prompt to signify a "hidden" option
+
+config SOC_FAMILY
+	string
+	default "pulpv4"
+	depends on SOC_FAMILY_PULPV4
+
+
+source "soc/riscv32/pulpv4/*/Kconfig.soc"

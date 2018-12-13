@@ -7,7 +7,7 @@
 
 menuconfig GPIO_GAP
 	bool "GAP GPIO controller driver"
-	depends on GPIO && SOC_RISCV32_GAP
+	depends on GPIO && SOC_RISCV32_GAP8
 	select HAS_DTS_GPIO
 	help
 	  Enable driver for the GAP GPIO controller.

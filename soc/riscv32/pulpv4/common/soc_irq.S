@@ -72,6 +72,8 @@ SECTION_FUNC(exception.other, __soc_handle_irq)
  * return 1 (interrupt) or 0 (exception)
  */
 SECTION_FUNC(exception.other, __soc_is_irq)
-not_interrupt:
-	/* return */
+	/* Get exception number from the mcause CSR register. */
+	csrr a0, mcause
+	srli a0, a0, 31
+
 	jalr x0, ra

@@ -41,7 +41,7 @@
 /* MSTATUS register to save/restore upon interrupt/exception/context switch */
 #define SOC_MSTATUS_REG            PULP_MESTATUS
 
-#define SOC_MSTATUS_IEN            (1 << 0) /* Machine Interrupt Enable bit */
+#define SOC_MSTATUS_IEN            (1 << 3) /* Machine Interrupt Enable bit */
 
 /*
  * Default MSTATUS register value to restore from stack
@@ -54,7 +54,7 @@
 #define SOC_MCAUSE_ECALL_EXP       PULP_ECALL_EXP /* ECALL exception number */
 
 /* SOC-Specific EXIT ISR command */
-#define SOC_ERET                   eret
+#define SOC_ERET                   mret
 
 /* UART configuration */
 #define CONFIG_UART_NS16550_PORT_0_IRQ_PRI       0
@@ -77,19 +77,7 @@
 #define PULP_TIMER_A_BASE          0x1A103000
 #define PULP_TIMER_B_BASE          0x1A103010
 
-/*
- * Zephyr-SDK makes use a the latest generic riscv32 toolchain, which
- * encodes the wfi opcode as 0x10500073. Pulpino does not understand
- * this opcode and will generate a fault upon execution. Pulpino core
- * implementation is based on a previous RISC-V ISA specification and
- * expects the wfi opcode to be encoded as 0x10200073. In new toolchain,
- * 0x10200073 opcode is used to represent the sret opcode. Hence,
- * when compiled with a generic riscv32 toolchain, define wfi by sret
- * in assembly code.
- */
-#if defined(CONFIG_RISCV_GENERIC_TOOLCHAIN)
-#define wfi                        sret
-#endif
+#define wfi                        wfi
 
 #ifndef _ASMLANGUAGE
 #include <irq.h>
@@ -119,15 +107,7 @@
 void soc_interrupt_init(void);
 #endif
 
-/*
- * when a generic riscv32 toolchain is used replaced wfi by sret
- * in inline assembly. Explanation given above.
- */
-#if defined(CONFIG_RISCV_GENERIC_TOOLCHAIN)
-#define SOC_WFI                    __asm__ volatile("sret")
-#else
 #define SOC_WFI                    __asm__ volatile("wfi")
-#endif
 
 /* lib-c hooks required RAM defined variables */
 #define RISCV_RAM_BASE             CONFIG_DTCM_BASE_ADDRESS

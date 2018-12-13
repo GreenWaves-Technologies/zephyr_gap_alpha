@@ -163,10 +163,10 @@ config PULPINO_TIMER
 	  This module implements a kernel device driver for the pulpino processor
 	  timer driver. It provides the standard "system clock driver" interfaces.
 
-config GAP_TIMER
-	bool "gap Timer"
+config PULP_TIMER_V2
+	bool "pulp Timer v2"
 	default y
-	depends on SOC_RISCV32_GAP
+	depends on SOC_RISCV32_GAP8
 	help
 	  This module implements a kernel device driver for the gap processor
 	  timer driver. It provides the standard "system clock driver" interfaces.

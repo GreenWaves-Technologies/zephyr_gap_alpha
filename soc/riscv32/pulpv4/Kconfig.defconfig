@@ -1,0 +1,1 @@
+source "soc/riscv32/pulpv4/*/Kconfig.defconfig.series"

@@ -1,0 +1,6 @@
+config SOC_SERIES_RISCV32_GAP8
+	bool "GAP8 SOC implementation"
+	depends on RISCV32
+	select SOC_FAMILY_PULPV4
+	help
+	  Enable support for GAP8 SOC

@@ -1,5 +1,5 @@
 
 config BOARD_GAPUINO
 	bool "Gapuino target"
-	depends on SOC_RISCV32_GAP
+	depends on SOC_RISCV32_GAP8
 	select HAS_DTS

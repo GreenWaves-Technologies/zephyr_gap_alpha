@@ -16,15 +16,9 @@ GTEXT(__irq_wrapper)
 SECTION_FUNC(vectors, __start)
 	.option norvc;
 
-	/* nop addr 0x00000000 - 0x00000058 */
-	.org 0x00
-	.rept 23
-	nop
-	.endr
-
 	/* Call __irq_wrapper for all interrupts */
-	.org 0x5C
-	.rept 9
+	.org 0x00
+	.rept 32
 	jal x0, __irq_wrapper
 	.endr
 

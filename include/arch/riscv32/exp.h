@@ -47,7 +47,7 @@ struct __esf {
 	u32_t mepc;      /* machine exception program counter */
 	u32_t mstatus;   /* machine status register */
 
-#if defined(CONFIG_SOC_RISCV32_PULPINO) || defined(CONFIG_SOC_RISCV32_GAP)
+#if defined(CONFIG_SOC_RISCV32_PULPINO) || defined(CONFIG_SOC_RISCV32_GAP8)
 	/* pulpino hardware loop registers */
 	u32_t lpstart0;
 	u32_t lpend0;

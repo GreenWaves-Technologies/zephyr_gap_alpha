@@ -20,8 +20,8 @@
 #include <linker/linker-defs.h>
 #include <linker/linker-tool.h>
 
-#define ROMABLE_REGION              DATARAM
-#define RAMABLE_REGION              DATARAM
+#define ROMABLE_REGION              FC_RAM
+#define RAMABLE_REGION              FC_RAM
 
 #define _VECTOR_SECTION_NAME        vector
 #define _EXCEPTION_SECTION_NAME     exceptions
@@ -31,13 +31,11 @@ ENTRY(__reset)
 
 MEMORY
     {
-    INSTRRAM (wx) : ORIGIN = CONFIG_ITCM_BASE_ADDRESS, LENGTH = CONFIG_ITCM_SIZE
-    DATARAM  (rw) : ORIGIN = CONFIG_DTCM_BASE_ADDRESS, LENGTH = CONFIG_DTCM_SIZE
+    L2_RAM (wx) : ORIGIN = CONFIG_L2_BASE_ADDRESS, LENGTH = CONFIG_L2_SIZE
+    FC_RAM  (rw) : ORIGIN = CONFIG_FC_TCDM_BASE_ADDRESS, LENGTH = CONFIG_FC_TCDM_SIZE
     /* Used by and documented in include/linker/intlist.ld */
     IDT_LIST  (wx)      : ORIGIN = 0xFFFFF7FF, LENGTH = 2K
 }
-
-ENTRY(CONFIG_KERNEL_ENTRY)
 
 SECTIONS
     {
@@ -58,24 +56,24 @@ SECTIONS
 		*(.iplt)
 	}
 
-    GROUP_START(INSTRRAM)
+    GROUP_START(L2_RAM)
 
     SECTION_PROLOGUE(_VECTOR_SECTION_NAME,,)
     {
 		. = ALIGN(4);
 		KEEP(*(.vectors.*))
-    } GROUP_LINK_IN(INSTRRAM)
+    } GROUP_LINK_IN(L2_RAM)
 
     SECTION_PROLOGUE(_RESET_SECTION_NAME,,)
     {
 		KEEP(*(.reset.*))
-    } GROUP_LINK_IN(INSTRRAM)
+    } GROUP_LINK_IN(L2_RAM)
 
     SECTION_PROLOGUE(_EXCEPTION_SECTION_NAME,,)
     {
 		 KEEP(*(".exception.entry.*"))
 		 *(".exception.other.*")
-    } GROUP_LINK_IN(INSTRRAM)
+    } GROUP_LINK_IN(L2_RAM)
 
     SECTION_PROLOGUE(_TEXT_SECTION_NAME,,)
 	{
@@ -89,11 +87,11 @@ SECTIONS
 		*(".text.*")
 		*(.gnu.linkonce.t.*)
 		*(.eh_frame)
-	} GROUP_LINK_IN(INSTRRAM)
+	} GROUP_LINK_IN(L2_RAM)
 
     _image_text_end = .;
 
-    GROUP_END(INSTRRAM)
+    GROUP_END(L2_RAM)
 
     GROUP_START(RAMABLE_REGION)
 

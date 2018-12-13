@@ -1,0 +1,9 @@
+choice
+prompt "GAP8 SOC implementation"
+depends on SOC_SERIES_RISCV32_GAP8
+
+config SOC_RISCV32_GAP8
+	bool "GAP8 SOC implementation"
+	select ATOMIC_OPERATIONS_C
+
+endchoice
