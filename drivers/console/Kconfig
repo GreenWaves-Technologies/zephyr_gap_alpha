@@ -254,7 +254,7 @@ config XTENSA_SIM_CONSOLE
 config PULP_SIM_CONSOLE
 	bool "Use Pulp simulator console"
 	select CONSOLE_HAS_DRIVER
-	default y
+	default n
 	help
 	  Use simulator console to print messages.
 

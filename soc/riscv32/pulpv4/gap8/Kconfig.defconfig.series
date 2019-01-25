@@ -47,5 +47,9 @@ config FC_TCDM_SIZE
 	hex
 	default 0x4000
 
+config UART_PULP_UART_V1
+	bool
+	default y
+
 
 endif # SOC_SERIES_RISCV32_GAP8

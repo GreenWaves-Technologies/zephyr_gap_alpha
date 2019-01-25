@@ -10,4 +10,5 @@ zephyr_sources(
   vector.S
   gap_irq.c
   gap_idle.c
+  soc_event_eu.c
   )

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 GreenWaves Technologies
+ * Copyright (C) 2018 ETH Zurich and University of Bologna
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef __HAL_CHIPS_GAP_PULP_H__
-#define __HAL_CHIPS_GAP_PULP_H__
+#ifndef __ARCHI_UDMA_UDMA_I2C_V1_H__
+#define __ARCHI_UDMA_UDMA_I2C_V1_H__
 
-#include "archi/chips/gap/pulp.h"
-#include "hal/timer/timer_v2.h"
-#include "hal/eu/eu_v3.h"
+#define ARCHI_I2C_SETUP_OFFSET          0x0
 
-#include "hal/udma/udma_v2.h"
-#include "hal/udma/cpi/udma_cpi_v1.h"
-#include "hal/udma/hyper/udma_hyper_v1.h"
-#include "hal/udma/i2c/udma_i2c_v2.h"
-#include "hal/udma/i2s/udma_i2s_v1.h"
-#include "hal/udma/spim/udma_spim_v2.h"
-#include "hal/udma/tcdm/udma_tcdm_v1.h"
-#include "hal/udma/uart/udma_uart_v1.h"
+#define I2C_CMD_START   0x02
+#define I2C_CMD_STOP    0x04
+#define I2C_CMD_RD_ACK  0x08
+#define I2C_CMD_RD_NACK 0x10
+#define I2C_CMD_WR      0x20
+#define I2C_CMD_WAIT    0x40
+#define I2C_CMD_RPT     0x80
 
-#include "hal/soc_eu/soc_eu_v1.h"
+#define I2C_CMD_SETUP_ENABLE_BIT           8
+#define I2C_CMD_SETUP_DIV_BIT              16
 
 #endif

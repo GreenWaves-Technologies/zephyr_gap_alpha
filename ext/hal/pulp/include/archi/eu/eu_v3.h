@@ -1,16 +1,21 @@
 /*
- * Copyright (c) 2018 ETH Zurich, University of Bologna, GreenWaves Technologies
+ * Copyright (C) 2018 ETH Zurich and University of Bologna
  *
- * SPDX-License-Identifier: Apache-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
-/**
- * @file
- * @brief gap interrupt management code
- */
-#include <irq.h>
-#include <soc.h>
-#include "hal/pulp.h"
+#ifndef __ARCHI_EU_EU_V3_H__
+#define __ARCHI_EU_EU_V3_H__
 
 /*
  * Register memory map
@@ -192,57 +197,10 @@
 #define PULP_SOC_HW_BAR_EVENT             30
 
 // SOC areas
-#define ARCHI_CLUSTER_ADDR              0x00000000
-
 #define EU_SOC_BARRIER_AREA_OFFSET_GET(barrier)             ((barrier)*EU_SOC_BARRIER_SIZE)
 #define EU_SOC_BARRIER_AREA_BARRIERID_GET(offset)           (((offset) & (EU_SOC_BARRIER_AREA_SIZE - 1)) >> EU_SOC_BARRIER_SIZE_LOG2)
 
 #define EU_SOC_LOCK_AREA_OFFSET_GET(lock)             ((lock)*EU_SOC_LOCK_SIZE)
 #define EU_SOC_LOCK_AREA_LOCKID_GET(offset)           (((offset) & (EU_SOC_LOCK_AREA_SIZE - 1)) >> EU_SOC_LOCK_SIZE_LOG2)
 
-#define pulp_write32(add, val_) (*(volatile unsigned int *)(long)(add) = val_)
-#define pulp_read32(add) (*(volatile unsigned int *)(long)(add))
-
-#define ARCHI_DEMUX_PERIPHERALS_OFFSET        0x204000
-
-#define ARCHI_DEMUX_PERIPHERALS_ADDR          ( ARCHI_CLUSTER_ADDR + ARCHI_DEMUX_PERIPHERALS_OFFSET )
-
-#define ARCHI_EU_DEMUX_OFFSET                 ( 0x00000 )
-#define ARCHI_EU_DEMUX_ADDR                   ( ARCHI_DEMUX_PERIPHERALS_ADDR + ARCHI_EU_DEMUX_OFFSET )
-
-static inline unsigned int eu_irq_mask_get()
-{
-  return pulp_read32(ARCHI_EU_DEMUX_ADDR + EU_CORE_MASK_IRQ);
-}
-
-void _arch_irq_enable(unsigned int irq)
-{
-	unsigned int key;
-
-	key = irq_lock();
-  eu_irq_maskSet(1<<irq);
-  eu_evt_maskSet(1<<irq);	
-	irq_unlock(key);
-};
-
-void _arch_irq_disable(unsigned int irq)
-{
-	unsigned int key;
-
-	key = irq_lock();
-  eu_irq_maskClr(1<<irq);
-  eu_evt_maskClr(1<<irq);
-	irq_unlock(key);
-};
-
-int _arch_irq_is_enabled(unsigned int irq)
-{
-	return (eu_irq_mask_get() >> irq) & 1;\
-}
-
-#if defined(CONFIG_RISCV_SOC_INTERRUPT_INIT)
-void soc_interrupt_init(void)
-{
-	__asm__ volatile("csrw mtvec, %0" : : "r" (0x1c000000));
-}
 #endif

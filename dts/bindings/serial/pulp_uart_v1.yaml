@@ -1,0 +1,15 @@
+---
+title: pulp_uart_v1
+version: 0.1
+
+description: >
+    This binding gives a base representation of the Pulp UDMA UART
+
+inherits:
+    !include uart.yaml
+
+properties:
+    compatible:
+      constraint: "pulp_uart_v1"
+
+...

@@ -23,4 +23,5 @@
 
 &uart0 {
 	status = "ok";
+	current-speed = <115200>;
 };

@@ -113,6 +113,8 @@ void soc_interrupt_init(void);
 #define RISCV_RAM_BASE             CONFIG_DTCM_BASE_ADDRESS
 #define RISCV_RAM_SIZE             CONFIG_DTCM_SIZE
 
+void pulp_soc_eu_register_udma_callback(u32_t event, void (*callback)(), void *arg);
+
 #endif /* !_ASMLANGUAGE */
 
 #endif /* __GAP_SOC_H_ */

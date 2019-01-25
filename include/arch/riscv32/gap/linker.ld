@@ -177,6 +177,12 @@ SECTIONS
 
      GROUP_END(RAMABLE_REGION)
 
+  SECTION_DATA_PROLOGUE(l2_ram,(NOLOAD),)
+  {
+     *(.l2_ram)
+     *(".l2_ram.*")
+  }  GROUP_LINK_IN(L2_RAM)
+
 #include <linker/debug-sections.ld>
 
 }

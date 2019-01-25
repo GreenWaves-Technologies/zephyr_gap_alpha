@@ -1,0 +1,28 @@
+# Kconfig.riscv_qemu - riscv-qemu UART configuration option
+#
+# Copyright (c) 2016 Jean-Paul Etienne <fractalclone@gmail.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+menuconfig UART_PULP_UART_V1
+	bool "pulp udma v1 UART driver"  
+	select SERIAL_HAS_DRIVER
+	help
+	  Enable the pulp udma v1 UART driver.
+
+menuconfig UART_PULP_PORT
+        bool "Enable Pulp Port 0"
+        default y
+        depends on UART_PULP_UART_V1
+        help
+          This tells the driver to configure the UART port at boot, depending on
+          the additional configure options below.
+
+config UART_PULP_PORT_NAME
+        string "UART Device Name"
+        default "UART_0"
+        depends on UART_PULP_PORT
+        help
+          This is the device name for UART, and is included in the device
+          struct.

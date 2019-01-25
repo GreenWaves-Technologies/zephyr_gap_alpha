@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 GreenWaves Technologies
+ * Copyright (C) 2018 ETH Zurich and University of Bologna
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef __HAL_CHIPS_GAP_PULP_H__
-#define __HAL_CHIPS_GAP_PULP_H__
+#ifndef __HAL_UDMA_UDMA_SPIM_V2_H__
+#define __HAL_UDMA_UDMA_SPIM_V2_H__
 
-#include "archi/chips/gap/pulp.h"
-#include "hal/timer/timer_v2.h"
-#include "hal/eu/eu_v3.h"
-
-#include "hal/udma/udma_v2.h"
-#include "hal/udma/cpi/udma_cpi_v1.h"
-#include "hal/udma/hyper/udma_hyper_v1.h"
-#include "hal/udma/i2c/udma_i2c_v2.h"
-#include "hal/udma/i2s/udma_i2s_v1.h"
-#include "hal/udma/spim/udma_spim_v2.h"
-#include "hal/udma/tcdm/udma_tcdm_v1.h"
-#include "hal/udma/uart/udma_uart_v1.h"
-
-#include "hal/soc_eu/soc_eu_v1.h"
+#include "archi/udma/spim/udma_spim_v2.h"
 
 #endif

@@ -26,7 +26,7 @@
 		ranges;
 
 		uart0: uart@1a100000 {
-			compatible = "ns16550";
+			compatible = "pulp_uart_v1";
 			reg = <0x1a100000 0x1000>;
 			label = "UART_0";
 			clock-frequency = <2500000>;
