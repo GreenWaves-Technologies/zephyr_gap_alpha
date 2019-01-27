@@ -13,7 +13,6 @@
 #include <arch/cpu.h>
 #include <device.h>
 #include <system_timer.h>
-#include <board.h>
 #include "hal/timer/timer_v2.h"
 
 static u32_t accumulated_cycle_count;

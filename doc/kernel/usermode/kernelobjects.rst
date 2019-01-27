@@ -220,7 +220,7 @@ Some objects will be implicitly initialized at boot:
   is run by the kernel early in the boot process.
 
 If a kernel object is initialized with a private static initializer, the
-object must have :c:func:`_k_object_init()` on it at some point by a supervisor
+object must have :c:func:`_k_object_init()` called on it at some point by a supervisor
 thread, otherwise the kernel will consider the object uninitialized if accessed
 by a user thread. This is very uncommon, typically only for kernel objects that
 are embedded within some larger struct and initialized statically.
@@ -277,16 +277,8 @@ Related configuration options:
 * :option:`CONFIG_APPLICATION_MEMORY`
 * :option:`CONFIG_MAX_THREAD_BYTES`
 
-APIs
-****
+API Reference
+*************
 
-* :c:func:`k_object_access_grant()`
-* :c:func:`k_object_access_revoke()`
-* :c:func:`k_object_access_all_grant()`
-* :c:func:`k_object_alloc()`
-* :c:func:`k_object_free()`
-* :c:func:`k_object_release()`
-* :c:func:`k_thread_access_grant()`
-* :c:func:`k_thread_user_mode_enter()`
-* :c:macro:`K_THREAD_ACCESS_GRANT()`
-
+.. doxygengroup:: usermode_apis
+   :project: Zephyr

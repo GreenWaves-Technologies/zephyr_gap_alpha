@@ -8,7 +8,7 @@
 
 #include <stdio.h>
 #include <kernel.h>
-#include <board.h>
+#include <soc.h>
 #include <device.h>
 #include <init.h>
 #include <dma.h>
@@ -133,7 +133,7 @@ static int dma_qmsi_chan_config(struct device *dev, u32_t channel,
 	struct dma_qmsi_driver_data *data = dev->driver_data;
 	qm_dma_transfer_t qmsi_transfer_cfg = { 0 };
 	qm_dma_channel_config_t qmsi_cfg = { 0 };
-	u32_t temp = 0;
+	u32_t temp = 0U;
 	int ret = 0;
 
 	if (config->block_count != 1) {

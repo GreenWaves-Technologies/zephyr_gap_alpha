@@ -20,35 +20,35 @@ GTEXT(__soc_irq_unlock)
 /* Use ABI name of registers for the sake of simplicity */
 
 SECTION_FUNC(exception.other, __soc_save_context)
-	/* Save hardware loop registers to stack */
+	/* Save hardware loop registers to the soc_esf_t passed in a0. */
 	csrr t0, PULP_LPSTART0
 	csrr t1, PULP_LPEND0
 	csrr t2, PULP_LPCOUNT0
-	sw t0, __NANO_ESF_lpstart0_OFFSET(sp)
-	sw t1, __NANO_ESF_lpend0_OFFSET(sp)
-	sw t2, __NANO_ESF_lpcount0_OFFSET(sp)
+	sw t0, __soc_esf_t_lpstart0_OFFSET(a0)
+	sw t1, __soc_esf_t_lpend0_OFFSET(a0)
+	sw t2, __soc_esf_t_lpcount0_OFFSET(a0)
 	csrr t0, PULP_LPSTART1
 	csrr t1, PULP_LPEND1
 	csrr t2, PULP_LPCOUNT1
-	sw t0, __NANO_ESF_lpstart1_OFFSET(sp)
-	sw t1, __NANO_ESF_lpend1_OFFSET(sp)
-	sw t2, __NANO_ESF_lpcount1_OFFSET(sp)
+	sw t0, __soc_esf_t_lpstart1_OFFSET(a0)
+	sw t1, __soc_esf_t_lpend1_OFFSET(a0)
+	sw t2, __soc_esf_t_lpcount1_OFFSET(a0)
 
 	/* Return */
 	jalr x0, ra
 
 
 SECTION_FUNC(exception.other, __soc_restore_context)
-	/* Restore hardloop registers from stack */
-	lw t0, __NANO_ESF_lpstart0_OFFSET(sp)
-	lw t1, __NANO_ESF_lpend0_OFFSET(sp)
-	lw t2, __NANO_ESF_lpcount0_OFFSET(sp)
+	/* Restore hardware loop registers from soc_esf_t in a0. */
+	lw t0, __soc_esf_t_lpstart0_OFFSET(a0)
+	lw t1, __soc_esf_t_lpend0_OFFSET(a0)
+	lw t2, __soc_esf_t_lpcount0_OFFSET(a0)
 	csrw PULP_LPSTART0, t0
 	csrw PULP_LPEND0, t1
 	csrw PULP_LPCOUNT0, t2
-	lw t0, __NANO_ESF_lpstart1_OFFSET(sp)
-	lw t1, __NANO_ESF_lpend1_OFFSET(sp)
-	lw t2, __NANO_ESF_lpcount1_OFFSET(sp)
+	lw t0, __soc_esf_t_lpstart1_OFFSET(a0)
+	lw t1, __soc_esf_t_lpend1_OFFSET(a0)
+	lw t2, __soc_esf_t_lpcount1_OFFSET(a0)
 	csrw PULP_LPSTART1, t0
 	csrw PULP_LPEND1, t1
 	csrw PULP_LPCOUNT1, t2

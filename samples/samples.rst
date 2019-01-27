@@ -10,6 +10,7 @@ Samples and Demos
 
    kernel
    basic/*
+   userspace/*
    subsys/subsys.rst
    net/net.rst
    bluetooth/bluetooth.rst
@@ -20,6 +21,9 @@ Samples and Demos
    application_development/*
    display/*
    shields/*
+   portability/*
+   gui/*
 
-To add a new sample document, please use the template available under
-:file:`doc/templates/sample.tmpl`
+.. comment
+   To add a new sample document, please use the template available under
+   :file:`doc/templates/sample.tmpl`

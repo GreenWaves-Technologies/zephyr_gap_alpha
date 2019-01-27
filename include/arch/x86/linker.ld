@@ -69,6 +69,17 @@ SECTIONS
 
 #include <linker/rel-sections.ld>
 
+    /DISCARD/ :
+	{
+	*(.plt)
+	}
+
+    /DISCARD/ :
+	{
+	*(.iplt)
+	}
+
+
 	GROUP_START(ROMABLE_REGION)
 #ifdef CONFIG_REALMODE
 	/* 16-bit sections */
@@ -96,6 +107,7 @@ SECTIONS
 	*(.text)
 	*(".text.*")
 	*(.gnu.linkonce.t.*)
+	*(.eh_frame_hdr)
 	*(.eh_frame)
 	*(.init)
 	*(.fini)
@@ -117,13 +129,15 @@ SECTIONS
 	*(.rodata)
 	*(".rodata.*")
 	*(.gnu.linkonce.r.*)
+
+#ifndef CONFIG_DYNAMIC_INTERRUPTS
 	. = ALIGN(8);
 	_idt_base_address = .;
 #ifdef LINKER_PASS2
 	KEEP(*(staticIdt))
 #else
 	. += CONFIG_IDT_NUM_VECTORS * 8;
-#endif
+#endif /* LINKER_PASS2 */
 
 #ifndef CONFIG_X86_FIXED_IRQ_MAPPING
 	. = ALIGN(4);
@@ -133,7 +147,8 @@ SECTIONS
 #else
 	. += CONFIG_MAX_IRQ_LINES;
 #endif
-#endif
+#endif /* CONFIG_X86_FIXED_IRQ_MAPPING */
+#endif /* CONFIG_DYNAMIC_INTERRUPTS */
 
 #ifdef CONFIG_SOC_RODATA_LD
 #include <soc-rodata.ld>
@@ -153,7 +168,7 @@ SECTIONS
 	/* Kernel ROM extends to the end of flash. Need to do this to program
 	 * the MMU
 	 */
-	_image_rom_end = _image_rom_start + KB(CONFIG_ROM_SIZE);
+	_image_rom_end = _image_rom_start + KB(DT_ROM_SIZE);
 #else
 	/* ROM ends here, position counter will now be in RAM areas */
 	_image_rom_end = .;
@@ -161,9 +176,32 @@ SECTIONS
 	_image_rom_size = _image_rom_end - _image_rom_start;
 
 	GROUP_END(ROMABLE_REGION)
-
+	/*
+	 * Needed for dynamic linking which we do not have, do discard
+	 */
+	/DISCARD/ : {
+		*(.got.plt)
+		*(.igot.plt)
+		*(.got)
+		*(.igot)
+	}
 	/* RAMABLE_REGION */
 	GROUP_START(RAMABLE_REGION)
+
+#ifdef CONFIG_COVERAGE_GCOV
+	SECTION_PROLOGUE(_GCOV_BSS_SECTION_NAME, (NOLOAD OPTIONAL),)
+	{
+		MMU_PAGE_ALIGN
+		__gcov_bss_start = .;
+		KERNEL_INPUT_SECTION(".bss.__gcov0.*");
+		. = ALIGN(4);
+		MMU_PAGE_ALIGN
+		__gcov_bss_end = .;
+	}GROUP_DATA_LINK_IN(RAMABLE_REGION, RAMABLE_REGION)
+
+	__gcov_bss_num_words = ((__gcov_bss_end - __gcov_bss_start) >> 2);
+	__gcov_bss_size = __gcov_bss_end - __gcov_bss_start;
+#endif /* CONFIG_COVERAGE_GCOV */
 
 	/* APP SHARED MEMORY REGION */
 	SECTION_PROLOGUE(_APP_SMEM_SECTION_NAME, (OPTIONAL),)
@@ -177,6 +215,8 @@ SECTIONS
 
 	_app_smem_size = _app_smem_end - _app_smem_start;
 	_app_smem_rom_start = LOADADDR(_APP_SMEM_SECTION_NAME);
+
+
 #ifdef CONFIG_APPLICATION_MEMORY
 	SECTION_DATA_PROLOGUE(_APP_DATA_SECTION_NAME, (OPTIONAL),)
 	{
@@ -268,6 +308,34 @@ SECTIONS
 	KERNEL_INPUT_SECTION(".data.*")
 	*(".kernel.*")
 
+#ifdef CONFIG_DYNAMIC_INTERRUPTS
+	. = ALIGN(8);
+	_idt_base_address = .;
+#ifdef LINKER_PASS2
+	KEEP(*(staticIdt))
+#else
+	. += CONFIG_IDT_NUM_VECTORS * 8;
+#endif /* LINKER_PASS2 */
+
+#ifndef CONFIG_X86_FIXED_IRQ_MAPPING
+	. = ALIGN(4);
+	_irq_to_interrupt_vector = .;
+#ifdef LINKER_PASS2
+	KEEP(*(irq_int_vector_map))
+#else
+	. += CONFIG_MAX_IRQ_LINES;
+#endif /* LINKER_PASS2 */
+#endif /* CONFIG_X86_FIXED_IRQ_MAPPING */
+
+	z_interrupt_vectors_allocated = .;
+#ifdef LINKER_PASS2
+	KEEP(*(irq_vectors_alloc_data))
+#else
+	. += (CONFIG_IDT_NUM_VECTORS + 7) / 8;
+#endif /* LINKER_PASS2 */
+#endif /* CONFIG_DYNAMIC_INTERRUPTS */
+
+
 #ifdef CONFIG_SOC_RWDATA_LD
 #include <soc-rwdata.ld>
 #endif
@@ -327,11 +395,11 @@ SECTIONS
 	__data_ram_end = .;
 
 	/* All unused memory also owned by the kernel for heaps */
-	__kernel_ram_end = PHYS_RAM_ADDR + KB(CONFIG_RAM_SIZE);
+	__kernel_ram_end = PHYS_RAM_ADDR + KB(DT_RAM_SIZE);
 	__kernel_ram_size = __kernel_ram_end - __kernel_ram_start;
 
 	_image_ram_end = .;
-	_image_ram_all = (PHYS_RAM_ADDR + KB(CONFIG_RAM_SIZE)) - _image_ram_start;
+	_image_ram_all = (PHYS_RAM_ADDR + KB(DT_RAM_SIZE)) - _image_ram_start;
 
 	_end = .; /* end of image */
 
@@ -382,6 +450,8 @@ SECTIONS
 #endif
 
 #include <linker/debug-sections.ld>
+
+	/DISCARD/ : { *(.note.GNU-stack) }
 
 	}
 

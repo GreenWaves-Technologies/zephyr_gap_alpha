@@ -26,41 +26,16 @@
 #define CANNOT_SET_RANGE_MIN		0x01
 #define CANNOT_SET_RANGE_MAX		0x02
 
-enum lightness {
-	ONPOWERUP = 0x01,
-	ONOFF,
-	LEVEL,
-	DELTA_LEVEL,
-	ACTUAL,
-	LINEAR,
-	CTL,
-	IGNORE
-};
-
-enum temperature {
-	ONOFF_TEMP = 0x01,
-	LEVEL_TEMP,
-	CTL_TEMP,
-	IGNORE_TEMP
-};
-
-enum target_values {
-	ONOFF_TARGET = 0x01,
-	LEVEL_LIGHT_TARGET,
-	LIGHT_ACTUAL_TARGET,
-	LIGHT_LINEAR_TARGET,
-	LIGHT_CTL_TARGET,
-	LEVEL_TEMP_TARGET,
-	LIGHT_CTL_TEMP_TARGET
-};
-
 struct generic_onoff_state {
 	u8_t onoff;
 	u8_t target_onoff;
 
 	u8_t last_tid;
-	u16_t last_tx_addr;
+	u16_t last_src_addr;
+	u16_t last_dst_addr;
 	s64_t last_msg_timestamp;
+
+	s32_t tt_delta;
 
 	struct transition *transition;
 };
@@ -73,7 +48,8 @@ struct generic_level_state {
 	s32_t last_delta;
 
 	u8_t last_tid;
-	u16_t last_tx_addr;
+	u16_t last_src_addr;
+	u16_t last_dst_addr;
 	s64_t last_msg_timestamp;
 
 	s32_t tt_delta;
@@ -83,8 +59,6 @@ struct generic_level_state {
 
 struct generic_onpowerup_state {
 	u8_t onpowerup;
-	u8_t last_tid;
-	u16_t last_tx_addr;
 };
 
 struct gen_def_trans_time_state {
@@ -95,7 +69,8 @@ struct vendor_state {
 	int current;
 	u32_t response;
 	u8_t last_tid;
-	u16_t last_tx_addr;
+	u16_t last_src_addr;
+	u16_t last_dst_addr;
 	s64_t last_msg_timestamp;
 };
 
@@ -112,9 +87,11 @@ struct light_lightness_state {
 	u8_t status_code;
 	u16_t light_range_min;
 	u16_t light_range_max;
+	u32_t lightness_range;
 
 	u8_t last_tid;
-	u16_t last_tx_addr;
+	u16_t last_src_addr;
+	u16_t last_dst_addr;
 	s64_t last_msg_timestamp;
 
 	s32_t tt_delta_actual;
@@ -136,6 +113,7 @@ struct light_ctl_state {
 	u8_t status_code;
 	u16_t temp_range_min;
 	u16_t temp_range_max;
+	u32_t temperature_range;
 
 	u16_t lightness_def;
 	u16_t temp_def;
@@ -145,7 +123,8 @@ struct light_ctl_state {
 	u32_t lightness_temp_last;
 
 	u8_t last_tid;
-	u16_t last_tx_addr;
+	u16_t last_src_addr;
+	u16_t last_dst_addr;
 	s64_t last_msg_timestamp;
 
 	s32_t tt_delta_lightness;
@@ -169,11 +148,11 @@ extern struct bt_mesh_model s0_models[];
 
 extern const struct bt_mesh_comp comp;
 
-void gen_onoff_publisher(struct bt_mesh_model *model);
-void gen_level_publisher(struct bt_mesh_model *model);
-void light_lightness_publisher(struct bt_mesh_model *model);
-void light_lightness_linear_publisher(struct bt_mesh_model *model);
-void light_ctl_publisher(struct bt_mesh_model *model);
-void light_ctl_temp_publisher(struct bt_mesh_model *model);
+void gen_onoff_publish(struct bt_mesh_model *model);
+void gen_level_publish(struct bt_mesh_model *model);
+void light_lightness_publish(struct bt_mesh_model *model);
+void light_lightness_linear_publish(struct bt_mesh_model *model);
+void light_ctl_publish(struct bt_mesh_model *model);
+void light_ctl_temp_publish(struct bt_mesh_model *model);
 
 #endif

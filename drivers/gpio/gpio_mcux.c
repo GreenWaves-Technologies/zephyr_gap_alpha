@@ -34,8 +34,8 @@ static int gpio_mcux_configure(struct device *dev,
 	GPIO_Type *gpio_base = config->gpio_base;
 	PORT_Type *port_base = config->port_base;
 	port_interrupt_t port_interrupt = 0;
-	u32_t mask = 0;
-	u32_t pcr = 0;
+	u32_t mask = 0U;
+	u32_t pcr = 0U;
 	u8_t i;
 
 	/* Check for an invalid pin configuration */
@@ -45,7 +45,7 @@ static int gpio_mcux_configure(struct device *dev,
 
 	/* Check if GPIO port supports interrupts */
 	if ((flags & GPIO_INT) && ((config->flags & GPIO_INT) == 0)) {
-		return -EINVAL;
+		return -ENOTSUP;
 	}
 
 	/* The flags contain options that require touching registers in the
@@ -116,7 +116,7 @@ static int gpio_mcux_configure(struct device *dev,
 	if (access_op == GPIO_ACCESS_BY_PIN) {
 		port_base->PCR[pin] = (port_base->PCR[pin] & ~mask) | pcr;
 	} else {  /* GPIO_ACCESS_BY_PORT */
-		for (i = 0; i < ARRAY_SIZE(port_base->PCR); i++) {
+		for (i = 0U; i < ARRAY_SIZE(port_base->PCR); i++) {
 			port_base->PCR[i] = (port_base->PCR[pin] & ~mask) | pcr;
 		}
 	}
@@ -174,9 +174,7 @@ static int gpio_mcux_manage_callback(struct device *dev,
 {
 	struct gpio_mcux_data *data = dev->driver_data;
 
-	_gpio_manage_callback(&data->callbacks, callback, set);
-
-	return 0;
+	return _gpio_manage_callback(&data->callbacks, callback, set);
 }
 
 static int gpio_mcux_enable_callback(struct device *dev,
@@ -201,7 +199,7 @@ static int gpio_mcux_disable_callback(struct device *dev,
 	if (access_op == GPIO_ACCESS_BY_PIN) {
 		data->pin_callback_enables &= ~BIT(pin);
 	} else {
-		data->pin_callback_enables = 0;
+		data->pin_callback_enables = 0U;
 	}
 
 	return 0;
@@ -412,4 +410,3 @@ static int gpio_mcux_porte_init(struct device *dev)
 #endif
 }
 #endif /* CONFIG_GPIO_MCUX_PORTE */
-

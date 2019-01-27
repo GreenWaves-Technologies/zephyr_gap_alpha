@@ -18,11 +18,13 @@
 		gpio-3= &gpio3;
 		gpio-4= &gpio4;
 		gpio-5= &gpio5;
+		i2c-1 = &i2c1;
 		uart-1 = &uart1;
 		uart-3 = &uart3;
 		led0 = &green_led;
 		sw0 = &user_button;
 		spi-3 = &spi3;
+		eth = &eth;
 	};
 
 	chosen {
@@ -30,14 +32,10 @@
 		zephyr,flash = &itcm0;
 #elif defined(CONFIG_CODE_HYPERFLASH)
 		zephyr,flash = &hyperflash0;
-#elif defined(CONFIG_CODE_QSPI)
-		zephyr,flash = &qspi0;
 #endif
 		zephyr,sram = &dtcm0;
 		zephyr,console = &uart1;
-#ifdef CONFIG_BT
-		zephyr,bt-uart = &uart3;
-#endif
+		zephyr,shell-uart = &uart1;
 	};
 
 	sdram0: memory@80000000 {
@@ -63,25 +61,32 @@
 	};
 };
 
-&flexspi0 {
-	hyperflash0: hyperflash@0 {
-		/* Cypress S26KS512SDPBHI02 */
-		reg = <0x60000000 0x4000000>;
-#if defined(CONFIG_CODE_HYPERFLASH)
-		status = "ok";
-#else
-		status = "disabled";
-#endif
-	};
+arduino_serial: &uart3 {};
 
-	qspi0: qspi@0 {
-		/* ISSI IS25WP064AJBLE */
-		reg = <0x60000000 0x800000>;
-#if defined(CONFIG_CODE_QSPI)
+&flexspi0 {
+	reg = <0x402a8000 0x4000>, <0x60000000 0x4000000>;
+	hyperflash0: hyperflash@0 {
+		compatible = "cypress,s26ks512s";
+		reg = <0>;
 		status = "ok";
-#else
-		status = "disabled";
-#endif
+	};
+};
+
+&i2c1 {
+	status = "ok";
+
+	fxos8700@1f {
+		compatible = "nxp,fxos8700";
+		reg = <0x1f>;
+		label = "FXOS8700";
+
+		/* Two zero ohm resistors (R263 and R264) isolate sensor
+		 * interrupt gpios from the soc and are unpopulated by default.
+		 * Note that if you populate them, they conflict with LCD and
+		 * Ethernet interrupt gpios.
+		 */
+		int1-gpios = <&gpio1 10 0>;
+		int2-gpios = <&gpio1 11 0>;
 	};
 };
 
@@ -90,13 +95,13 @@
 	current-speed = <115200>;
 };
 
-#ifdef CONFIG_BT
-&uart3 {
-	status = "ok";
-	current-speed = <115200>;
-};
-#endif
-
 &spi3 {
 	status = "ok";
+};
+
+&eth {
+	status = "ok";
+	ptp {
+		status = "ok";
+	};
 };

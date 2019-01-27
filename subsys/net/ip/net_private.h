@@ -44,7 +44,7 @@ extern void net_if_post_init(void);
 extern void net_if_carrier_down(struct net_if *iface);
 extern void net_context_init(void);
 enum net_verdict net_ipv4_process_pkt(struct net_pkt *pkt);
-enum net_verdict net_ipv6_process_pkt(struct net_pkt *pkt);
+enum net_verdict net_ipv6_process_pkt(struct net_pkt *pkt, bool is_loopback);
 extern void net_tc_tx_init(void);
 extern void net_tc_rx_init(void);
 extern void net_tc_submit_to_tx_queue(u8_t tc, struct net_pkt *pkt);
@@ -192,27 +192,21 @@ static inline void net_hexdump(const char *str,
 }
 
 
-/* Hexdump from all fragments
- * Set full as true to get also the L2 reserve part printed out
- */
+/* Hexdump from all fragments */
 static inline void net_hexdump_frags(const char *str,
 				     struct net_pkt *pkt, bool full)
 {
-	u8_t reserve = full ? net_pkt_ll_reserve(pkt) : 0;
 	struct net_buf *frag = pkt->frags;
+
+	ARG_UNUSED(full);
 
 	if (str && str[0]) {
 		LOG_DBG("%s", str);
 	}
 
 	while (frag) {
-		LOG_HEXDUMP_DBG(full ? frag->data - reserve : frag->data,
-				frag->len + reserve, "");
+		LOG_HEXDUMP_DBG(frag->data, frag->len, "");
 		frag = frag->frags;
-
-		if (full && reserve) {
-			reserve -= net_pkt_ll_reserve(pkt);
-		}
 	}
 }
 

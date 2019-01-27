@@ -82,7 +82,7 @@ static int bmm150_set_odr(struct device *dev, u8_t val)
 	const struct bmm150_config *config = dev->config->config_info;
 	u8_t i;
 
-	for (i = 0; i < ARRAY_SIZE(bmm150_samp_freq_table); ++i) {
+	for (i = 0U; i < ARRAY_SIZE(bmm150_samp_freq_table); ++i) {
 		if (val <= bmm150_samp_freq_table[i].freq) {
 			return i2c_reg_update_byte(data->i2c,
 						   config->i2c_slave_addr,
@@ -173,7 +173,7 @@ static int bmm150_read_odr(struct device *dev)
 
 	odr_val = (reg_val & BMM150_MASK_ODR) >> BMM150_SHIFT_ODR;
 
-	for (i = 0; i < ARRAY_SIZE(bmm150_samp_freq_table); ++i) {
+	for (i = 0U; i < ARRAY_SIZE(bmm150_samp_freq_table); ++i) {
 		if (bmm150_samp_freq_table[i].reg_val == odr_val) {
 			data->odr = bmm150_samp_freq_table[i].freq;
 			return 0;
@@ -297,7 +297,7 @@ static int bmm150_sample_fetch(struct device *dev, enum sensor_channel chan)
 	u16_t rhall;
 
 	__ASSERT_NO_MSG(chan == SENSOR_CHAN_ALL ||
-			chan == SENSOR_CHAN_MAGN_ANY);
+			chan == SENSOR_CHAN_MAGN_XYZ);
 
 	if (i2c_burst_read(drv_data->i2c, config->i2c_slave_addr,
 			   BMM150_REG_X_L, (u8_t *)values,
@@ -353,7 +353,7 @@ static int bmm150_channel_get(struct device *dev,
 	case SENSOR_CHAN_MAGN_Z:
 		bmm150_convert(val, drv_data->sample_x);
 		break;
-	case SENSOR_CHAN_MAGN_ANY:
+	case SENSOR_CHAN_MAGN_XYZ:
 		bmm150_convert(val, drv_data->sample_x);
 		bmm150_convert(val + 1, drv_data->sample_y);
 		bmm150_convert(val + 2, drv_data->sample_z);

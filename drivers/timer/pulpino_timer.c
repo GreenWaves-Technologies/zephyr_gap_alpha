@@ -8,7 +8,6 @@
 #include <arch/cpu.h>
 #include <device.h>
 #include <system_timer.h>
-#include <board.h>
 
 /* Timer Ctrl Bitfields */
 #define TIMER_CTRL_EN              (1 << 0)            /* Timer Enable Bit */
@@ -29,7 +28,7 @@ static void pulpino_timer_irq_handler(void *unused)
 	ARG_UNUSED(unused);
 
 	/* Reset counter */
-	timer->val = 0;
+	timer->val = 0U;
 
 	accumulated_cycle_count += sys_clock_hw_cycles_per_tick();
 
@@ -52,7 +51,7 @@ int z_clock_driver_init(struct device *device)
 	 * Reset counter and set timer to generate interrupt
 	 * every sys_clock_hw_cycles_per_tick()
 	 */
-	timer->val = 0;
+	timer->val = 0U;
 	timer->cmp = sys_clock_hw_cycles_per_tick();
 	timer->ctrl = TIMER_CTRL_EN;
 

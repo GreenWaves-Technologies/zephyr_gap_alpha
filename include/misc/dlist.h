@@ -117,7 +117,7 @@ typedef struct _dnode sys_dnode_t;
  * @param __n The field name of sys_dnode_t within the container struct
  */
 #define SYS_DLIST_CONTAINER(__dn, __cn, __n) \
-	(__dn ? CONTAINER_OF(__dn, __typeof__(*__cn), __n) : NULL)
+	((__dn != NULL) ? CONTAINER_OF(__dn, __typeof__(*__cn), __n) : NULL)
 /*
  * @brief Provide the primitive to peek container of the list head
  *
@@ -136,7 +136,8 @@ typedef struct _dnode sys_dnode_t;
  * @param __n The field name of sys_dnode_t within the container struct
  */
 #define SYS_DLIST_PEEK_NEXT_CONTAINER(__dl, __cn, __n) \
-	((__cn) ? SYS_DLIST_CONTAINER(sys_dlist_peek_next(__dl, &(__cn->__n)), \
+	((__cn != NULL) ? \
+	 SYS_DLIST_CONTAINER(sys_dlist_peek_next(__dl, &(__cn->__n)),	\
 				      __cn, __n) : NULL)
 
 /**
@@ -180,7 +181,7 @@ typedef struct _dnode sys_dnode_t;
 	     __cns = SYS_DLIST_PEEK_NEXT_CONTAINER(__dl, __cn, __n))
 
 /**
- * @brief initialize list
+ * @brief initialize list to its empty state
  *
  * @param list the doubly-linked list
  *
@@ -194,6 +195,33 @@ static inline void sys_dlist_init(sys_dlist_t *list)
 }
 
 #define SYS_DLIST_STATIC_INIT(ptr_to_list) { {(ptr_to_list)}, {(ptr_to_list)} }
+
+/**
+ * @brief initialize node to its state when not in a list
+ *
+ * @param node the node
+ *
+ * @return N/A
+ */
+
+static inline void sys_dnode_init(sys_dnode_t *node)
+{
+	node->next = NULL;
+	node->prev = NULL;
+}
+
+/**
+ * @brief check if a node is a member of any list
+ *
+ * @param node the node
+ *
+ * @return true if node is linked into a list, false if it is not
+ */
+
+static inline bool sys_dnode_is_linked(const sys_dnode_t *node)
+{
+	return node->next != NULL;
+}
 
 /**
  * @brief check if a node is the list's head
@@ -309,7 +337,7 @@ static inline sys_dnode_t *sys_dlist_peek_next_no_check(sys_dlist_t *list,
 static inline sys_dnode_t *sys_dlist_peek_next(sys_dlist_t *list,
 					       sys_dnode_t *node)
 {
-	return node ? sys_dlist_peek_next_no_check(list, node) : NULL;
+	return (node != NULL) ? sys_dlist_peek_next_no_check(list, node) : NULL;
 }
 
 /**
@@ -344,7 +372,7 @@ static inline sys_dnode_t *sys_dlist_peek_prev_no_check(sys_dlist_t *list,
 static inline sys_dnode_t *sys_dlist_peek_prev(sys_dlist_t *list,
 					       sys_dnode_t *node)
 {
-	return node ? sys_dlist_peek_prev_no_check(list, node) : NULL;
+	return (node != NULL) ? sys_dlist_peek_prev_no_check(list, node) : NULL;
 }
 
 /**
@@ -416,7 +444,7 @@ static inline void sys_dlist_prepend(sys_dlist_t *list, sys_dnode_t *node)
 static inline void sys_dlist_insert_after(sys_dlist_t *list,
 	sys_dnode_t *insert_point, sys_dnode_t *node)
 {
-	if (!insert_point) {
+	if (insert_point == NULL) {
 		sys_dlist_prepend(list, node);
 	} else {
 		node->next = insert_point->next;
@@ -442,7 +470,7 @@ static inline void sys_dlist_insert_after(sys_dlist_t *list,
 static inline void sys_dlist_insert_before(sys_dlist_t *list,
 	sys_dnode_t *insert_point, sys_dnode_t *node)
 {
-	if (!insert_point) {
+	if (insert_point == NULL) {
 		sys_dlist_append(list, node);
 	} else {
 		node->prev = insert_point->prev;
@@ -470,7 +498,7 @@ static inline void sys_dlist_insert_before(sys_dlist_t *list,
  */
 
 static inline void sys_dlist_insert_at(sys_dlist_t *list, sys_dnode_t *node,
-	int (*cond)(sys_dnode_t *, void *), void *data)
+	int (*cond)(sys_dnode_t *node, void *data), void *data)
 {
 	if (sys_dlist_is_empty(list)) {
 		sys_dlist_append(list, node);
@@ -499,6 +527,7 @@ static inline void sys_dlist_remove(sys_dnode_t *node)
 {
 	node->prev->next = node->next;
 	node->next->prev = node->prev;
+	sys_dnode_init(node);
 }
 
 /**
@@ -513,14 +542,13 @@ static inline void sys_dlist_remove(sys_dnode_t *node)
 
 static inline sys_dnode_t *sys_dlist_get(sys_dlist_t *list)
 {
-	sys_dnode_t *node;
+	sys_dnode_t *node = NULL;
 
-	if (sys_dlist_is_empty(list)) {
-		return NULL;
+	if (!sys_dlist_is_empty(list)) {
+		node = list->head;
+		sys_dlist_remove(node);
 	}
 
-	node = list->head;
-	sys_dlist_remove(node);
 	return node;
 }
 

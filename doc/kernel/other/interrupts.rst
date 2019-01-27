@@ -166,12 +166,8 @@ processing to a thread.
 * An ISR can signal a helper thread to do interrupt-related processing
   using a kernel object, such as a fifo, lifo, or semaphore.
 
-* An ISR can signal an alert which causes the system workqueue thread
-  to execute an associated alert handler function.
-  (See :ref:`alerts_v2`.)
-
 * An ISR can instruct the system workqueue thread to execute a work item.
-  (See TBD.)
+  (See :ref:`workqueues_v2`.)
 
 When an ISR offloads work to a thread, there is typically a single context
 switch to that thread when the ISR completes, allowing interrupt-related
@@ -217,6 +213,27 @@ The following code defines and enables an ISR.
        irq_enable(MY_DEV_IRQ);
        ...
     }
+
+Since the :c:macro:`IRQ_CONNECT` macro requires that all its parameters be
+known at build time, in some cases this may not be acceptable. It is also
+possible to install interrupts at runtime with
+:cpp:func:`irq_connect_dynamic()`. It is used in exactly the same way as
+:c:macro:`IRQ_CONNECT`:
+
+.. code-block:: c
+
+    void my_isr_installer(void)
+    {
+       ...
+       irq_connect_dynamic(MY_DEV_IRQ, MY_DEV_PRIO, my_isr, MY_ISR_ARG,
+                           MY_IRQ_FLAGS);
+       irq_enable(MY_DEV_IRQ);
+       ...
+    }
+
+Dynamic interrupts require the :option:`CONFIG_DYNAMIC_INTERRUPTS` option to
+be enabled. Removing or re-configuring a dynamic interrupt is currently
+unsupported.
 
 Defining a 'direct' ISR
 =======================
@@ -265,6 +282,8 @@ The following code demonstrates a direct ISR:
        ...
     }
 
+Installation of dynamic direct interrupts is currently unsupported.
+
 Implementation Details
 ======================
 
@@ -289,8 +308,8 @@ struct _isr_list which is placed in a special .intList section:
     };
 
 Zephyr is built in two phases; the first phase of the build produces
-zephyr_prebuilt.elf which contains all the entries in the .intList section
-preceded by a header:
+``${ZEPHYR_PREBUILT_EXECUTABLE}``.elf which contains all the entries in
+the .intList section preceded by a header:
 
 .. code-block:: c
 
@@ -303,9 +322,10 @@ preceded by a header:
     };
 
 This data consisting of the header and instances of struct _isr_list inside
-zephyr_prebuilt.elf is then used by the gen_isr_tables.py script to generate a
-C file defining a vector table and software ISR table that are then compiled
-and linked into the final application.
+``${ZEPHYR_PREBUILT_EXECUTABLE}``.elf is then used by the
+gen_isr_tables.py script to generate a C file defining a vector table and
+software ISR table that are then compiled and linked into the final
+application.
 
 The priority level of any interrupt is not encoded in these tables, instead
 :c:macro:`IRQ_CONNECT` also has a runtime component which programs the desired
@@ -389,6 +409,13 @@ creates an _irq_to_interrupt_vector array which maps an IRQ line to its
 configured vector in the IDT. This is used at runtime by :c:macro:`IRQ_CONNECT`
 to program the IRQ-to-vector association in the interrupt controller.
 
+For dynamic interrupts, the build must generate some 4-byte dynamic interrupt
+stubs, one stub per dynamic interrupt in use. The number of stubs is controlled
+by the :option:`CONFIG_X86_DYNAMIC_IRQ_STUBS` option. Each stub pushes an
+unique identifier which is then used to fetch the appropriate handler function
+and parameter out of a table populated when the dynamic interrupt was
+connected.
+
 Suggested Uses
 **************
 
@@ -410,24 +437,8 @@ Related configuration options:
 Additional architecture-specific and device-specific configuration options
 also exist.
 
-APIs
-****
+API Reference
+*************
 
-The following interrupt-related APIs are provided by :file:`irq.h`:
-
-* :c:macro:`IRQ_CONNECT`
-* :c:macro:`IRQ_DIRECT_CONNECT`
-* :c:macro:`ISR_DIRECT_HEADER`
-* :c:macro:`ISR_DIRECT_FOOTER`
-* :c:macro:`ISR_DIRECT_PM`
-* :c:macro:`ISR_DIRECT_DECLARE`
-* :cpp:func:`irq_lock()`
-* :cpp:func:`irq_unlock()`
-* :cpp:func:`irq_enable()`
-* :cpp:func:`irq_disable()`
-* :cpp:func:`irq_is_enabled()`
-
-The following interrupt-related APIs are provided by :file:`kernel.h`:
-
-* :cpp:func:`k_is_in_isr()`
-* :cpp:func:`k_is_preempt_thread`
+.. doxygengroup:: isr_apis
+   :project: Zephyr

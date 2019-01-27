@@ -166,7 +166,7 @@ struct bt_smp {
 	u8_t			mackey[16];
 
 	/* LE SC passkey */
-	u32_t		passkey;
+	u32_t			passkey;
 
 	/* LE SC passkey round */
 	u8_t			passkey_round;
@@ -178,7 +178,7 @@ struct bt_smp {
 	u8_t			remote_dist;
 
 	/* Delayed work for timeout handling */
-	struct k_delayed_work work;
+	struct k_delayed_work 	work;
 };
 
 static unsigned int fixed_passkey = BT_PASSKEY_INVALID;
@@ -240,10 +240,10 @@ struct bt_smp_br {
 	u8_t			remote_dist;
 
 	/* Encryption Key Size used for connection */
-	u8_t enc_key_size;
+	u8_t 			enc_key_size;
 
 	/* Delayed work for timeout handling */
-	struct k_delayed_work work;
+	struct k_delayed_work 	work;
 };
 
 static struct bt_smp_br bt_smp_br_pool[CONFIG_BT_MAX_CONN];
@@ -959,7 +959,7 @@ static void smp_br_distribute_keys(struct bt_smp_br *smp)
 		if (atomic_test_bit(smp->flags, SMP_FLAG_BOND)) {
 			bt_keys_add_type(keys, BT_KEYS_LOCAL_CSRK);
 			memcpy(keys->local_csrk.val, info->csrk, 16);
-			keys->local_csrk.cnt = 0;
+			keys->local_csrk.cnt = 0U;
 		}
 
 		smp_br_send(smp, buf, sign_info_sent);
@@ -1671,7 +1671,7 @@ static u8_t smp_send_pairing_confirm(struct bt_smp *smp)
 	switch (smp->method) {
 	case PASSKEY_CONFIRM:
 	case JUST_WORKS:
-		r = 0;
+		r = 0U;
 		break;
 	case PASSKEY_DISPLAY:
 	case PASSKEY_INPUT:
@@ -1843,7 +1843,7 @@ static void bt_smp_distribute_keys(struct bt_smp *smp)
 		if (atomic_test_bit(smp->flags, SMP_FLAG_BOND)) {
 			bt_keys_add_type(keys, BT_KEYS_LOCAL_CSRK);
 			memcpy(keys->local_csrk.val, info->csrk, 16);
-			keys->local_csrk.cnt = 0;
+			keys->local_csrk.cnt = 0U;
 		}
 
 		smp_send(smp, buf, sign_info_sent);
@@ -2380,6 +2380,7 @@ int bt_smp_send_security_req(struct bt_conn *conn)
 
 static u8_t smp_pairing_req(struct bt_smp *smp, struct net_buf *buf)
 {
+	struct bt_conn *conn = smp->chan.chan.conn;
 	struct bt_smp_pairing *req = (void *)buf->data;
 	struct bt_smp_pairing *rsp;
 
@@ -2449,8 +2450,16 @@ static u8_t smp_pairing_req(struct bt_smp *smp, struct net_buf *buf)
 
 	smp->method = get_pair_method(smp, req->io_capability);
 
-	if (IS_ENABLED(CONFIG_BT_SMP_SC_ONLY) && smp->method == JUST_WORKS) {
+	if ((IS_ENABLED(CONFIG_BT_SMP_SC_ONLY) ||
+	     conn->required_sec_level == BT_SECURITY_FIPS) &&
+		smp->method == JUST_WORKS) {
 		return BT_SMP_ERR_AUTH_REQUIREMENTS;
+	}
+
+	if ((IS_ENABLED(CONFIG_BT_SMP_SC_ONLY) ||
+	     conn->required_sec_level == BT_SECURITY_FIPS) &&
+	       get_encryption_key_size(smp) != BT_SMP_MAX_ENC_KEY_SIZE) {
+		return BT_SMP_ERR_ENC_KEY_SIZE;
 	}
 
 	if ((DISPLAY_FIXED(smp) || smp->method == JUST_WORKS) &&
@@ -2560,6 +2569,7 @@ int bt_smp_send_pairing_req(struct bt_conn *conn)
 
 static u8_t smp_pairing_rsp(struct bt_smp *smp, struct net_buf *buf)
 {
+	struct bt_conn *conn = smp->chan.chan.conn;
 	struct bt_smp_pairing *rsp = (void *)buf->data;
 	struct bt_smp_pairing *req = (struct bt_smp_pairing *)&smp->preq[1];
 
@@ -2602,8 +2612,16 @@ static u8_t smp_pairing_rsp(struct bt_smp *smp, struct net_buf *buf)
 
 	smp->method = get_pair_method(smp, rsp->io_capability);
 
-	if (IS_ENABLED(CONFIG_BT_SMP_SC_ONLY) && smp->method == JUST_WORKS) {
+	if ((IS_ENABLED(CONFIG_BT_SMP_SC_ONLY) ||
+	     conn->required_sec_level == BT_SECURITY_FIPS) &&
+	     smp->method == JUST_WORKS) {
 		return BT_SMP_ERR_AUTH_REQUIREMENTS;
+	}
+
+	if ((IS_ENABLED(CONFIG_BT_SMP_SC_ONLY) ||
+	     conn->required_sec_level == BT_SECURITY_FIPS) &&
+	     get_encryption_key_size(smp) != BT_SMP_MAX_ENC_KEY_SIZE) {
+		return BT_SMP_ERR_ENC_KEY_SIZE;
 	}
 
 	smp->local_dist &= SEND_KEYS_SC;
@@ -2860,7 +2878,7 @@ static u8_t sc_smp_check_confirm(struct bt_smp *smp)
 	switch (smp->method) {
 	case PASSKEY_CONFIRM:
 	case JUST_WORKS:
-		r = 0;
+		r = 0U;
 		break;
 	case PASSKEY_DISPLAY:
 	case PASSKEY_INPUT:
@@ -3281,7 +3299,7 @@ static u8_t display_passkey(struct bt_smp *smp)
 		smp->passkey %= 1000000;
 	}
 
-	smp->passkey_round = 0;
+	smp->passkey_round = 0U;
 
 	if (bt_auth && bt_auth->passkey_display) {
 		atomic_set_bit(smp->flags, SMP_FLAG_DISPLAY);
@@ -3695,7 +3713,7 @@ static void bt_smp_encrypt_change(struct bt_l2cap_chan *chan,
 	}
 }
 
-#if defined(CONFIG_BT_SIGNING)
+#if defined(CONFIG_BT_SIGNING) || defined(CONFIG_BT_SMP_SELFTEST)
 /* Sign message using msg as a buffer, len is a size of the message,
  * msg buffer contains message itself, 32 bit count and signature,
  * so total buffer size is len + 4 + 8 octets.
@@ -3733,7 +3751,9 @@ static int smp_sign_buf(const u8_t *key, u8_t *msg, u16_t len)
 
 	return 0;
 }
+#endif
 
+#if defined(CONFIG_BT_SIGNING)
 int bt_smp_sign_verify(struct bt_conn *conn, struct net_buf *buf)
 {
 	struct bt_keys *keys;
@@ -4416,7 +4436,7 @@ int bt_passkey_set(unsigned int passkey)
 	fixed_passkey = passkey;
 	return 0;
 }
-#endif /* CONFIG_SMP_FIXED_PASSKEY */
+#endif /* CONFIG_BT_FIXED_PASSKEY */
 
 void bt_smp_update_keys(struct bt_conn *conn)
 {
