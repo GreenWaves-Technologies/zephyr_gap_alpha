@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 GreenWaves Technologies
+ * Copyright (C) 2018 ETH Zurich and University of Bologna
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,18 @@
  * limitations under the License.
  */
 
+#ifndef __HAL_MAESTRO_PMU_V2_H__
+#define __HAL_MAESTRO_PMU_V2_H__
 
-#ifndef __ARCHI_CHIPS_GAP_PULP_H__
-#define __ARCHI_CHIPS_GAP_PULP_H__
+#include "hal/pulp.h"
+#include "archi/maestro/maestro_v2.h"
 
-#include "archi/chips/gap/properties.h"
-#include "archi/chips/gap/memory_map.h"
-#include "archi/chips/gap/apb_soc.h"
+static inline void hal_pmu_bypass_set(unsigned int Value) {
+  IP_WRITE(ARCHI_APB_SOC_CTRL_ADDR, APB_SOC_BYPASS_OFFSET, Value);
+}
 
-#include "archi/fll/fll_v1.h"
+static inline unsigned int hal_pmu_bypass_get() {
+  return IP_READ(ARCHI_APB_SOC_CTRL_ADDR, APB_SOC_BYPASS_OFFSET);
+}
 
 #endif

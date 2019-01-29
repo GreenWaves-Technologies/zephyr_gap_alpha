@@ -17,9 +17,13 @@
 #ifndef __HAL_CHIPS_GAP_PULP_H__
 #define __HAL_CHIPS_GAP_PULP_H__
 
+#include "hal/riscv/riscv_v4.h"
 #include "archi/chips/gap/pulp.h"
 #include "hal/timer/timer_v2.h"
 #include "hal/eu/eu_v3.h"
+#include "hal/maestro/pmu_v1.h"
+#include "hal/cluster_ctrl/cluster_ctrl_v2.h"
+#include "hal/fll/fll_v1.h"
 
 #include "hal/udma/udma_v2.h"
 #include "hal/udma/cpi/udma_cpi_v1.h"

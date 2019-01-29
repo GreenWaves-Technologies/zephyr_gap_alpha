@@ -33,6 +33,8 @@ MEMORY
     {
     L2_RAM (wx) : ORIGIN = CONFIG_L2_BASE_ADDRESS, LENGTH = CONFIG_L2_SIZE
     FC_RAM  (rw) : ORIGIN = CONFIG_FC_TCDM_BASE_ADDRESS, LENGTH = CONFIG_FC_TCDM_SIZE
+    L1_RAM                 : ORIGIN = 0x10000004, LENGTH = 0x0000fffc
+    L1_ALIAS_RAM           : ORIGIN = 0x00000004, LENGTH = 0x0000fffc
     /* Used by and documented in include/linker/intlist.ld */
     IDT_LIST  (wx)      : ORIGIN = 0xFFFFF7FF, LENGTH = 2K
 }
@@ -61,7 +63,8 @@ SECTIONS
     SECTION_PROLOGUE(_VECTOR_SECTION_NAME,,)
     {
 		. = ALIGN(4);
-		KEEP(*(.vectors.*))
+		KEEP(*(.vectors))
+    KEEP(*(.vectors.*))
     } GROUP_LINK_IN(L2_RAM)
 
     SECTION_PROLOGUE(_RESET_SECTION_NAME,,)
@@ -183,6 +186,23 @@ SECTIONS
      *(".l2_ram.*")
   }  GROUP_LINK_IN(L2_RAM)
 
+  SECTION_DATA_PROLOGUE(l1_tiny_ram,(NOLOAD),)
+  {
+     *(.l1_tiny_ram)
+     *(".l1_tiny_ram.*")
+  }  GROUP_LINK_IN(L1_ALIAS_RAM)
+
+  SECTION_DATA_PROLOGUE(l1_ram,(ORIGIN(L1_RAM) + SIZEOF(l1_tiny_ram)),)
+  {
+     *(.l1_ram)
+     *(".l1_ram.*")
+  }  GROUP_LINK_IN(L1_RAM)
+
+  __l1_heap_start = ALIGN(4);
+  __l1_heap_size = LENGTH(L1_RAM) - __l1_heap_start + ORIGIN(L1_RAM);
+
 #include <linker/debug-sections.ld>
+
+  SECTION_PROLOGUE(.Pulp_Chip.Info, 0,)            { *(.Pulp_Chip.Info) }
 
 }

@@ -115,6 +115,30 @@ void soc_interrupt_init(void);
 
 void pulp_soc_eu_register_udma_callback(u32_t event, void (*callback)(), void *arg);
 
+int cluster_power_up();
+
+int cluster_power_down();
+
+void cluster_alloc_init();
+
 #endif /* !_ASMLANGUAGE */
+
+// This event is used by FC to notify few events to the cluster:
+//  - A remote cluster to FC event was handled and the cluster can then try to
+//    post again another event in case it was working
+//  - There was a remote request handled so the cluster can check iif the one is
+//    waiting for has finished
+#define CLUSTER_CALL_EVT 1
+
+#define FC_TASK_END 1
+
+#define CLUSTER_TASK_T_NEXT              0
+#define CLUSTER_TASK_T_NB_CORES          4
+#define CLUSTER_TASK_T_ENTRY             8
+#define CLUSTER_TASK_T_ARGS              12
+#define CLUSTER_TASK_T_STACKS            16
+#define CLUSTER_TASK_T_MASTER_STACK_SIZE 20
+#define CLUSTER_TASK_T_SLAVE_STACK_SIZE  24
+#define CLUSTER_TASK_T_PENDING           28
 
 #endif /* __GAP_SOC_H_ */

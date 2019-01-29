@@ -7,5 +7,4 @@ config SOC_FAMILY
 	default "pulpv4"
 	depends on SOC_FAMILY_PULPV4
 
-
 source "soc/riscv32/pulpv4/*/Kconfig.soc"

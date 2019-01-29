@@ -68,3 +68,8 @@ u32_t z_clock_elapsed(void)
 {
 	return 0;
 }
+
+void z_clock_idle_exit(void)
+{
+  
+}

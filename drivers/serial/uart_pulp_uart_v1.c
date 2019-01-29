@@ -76,7 +76,7 @@ static int uart_pulp_poll_in(struct device *dev, unsigned char *c)
 	return -1;
 }
 
-static unsigned char uart_pulp_poll_out(struct device *dev,
+static void uart_pulp_poll_out(struct device *dev,
 					   unsigned char c)
 {
 	struct uart_pulp_dev_data_t * const dev_data = DEV_DATA(dev);
@@ -92,8 +92,6 @@ static unsigned char uart_pulp_poll_out(struct device *dev,
 	k_sem_take(&dev_data->sync, K_FOREVER);
 
 	k_mutex_unlock(&dev_data->mutex );
-
-	return c;
 }
 
 static int uart_pulp_err_check(struct device *dev)

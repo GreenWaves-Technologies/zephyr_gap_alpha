@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 GreenWaves Technologies
+ * Copyright (C) 2018 ETH Zurich and University of Bologna
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,7 @@
  * limitations under the License.
  */
 
-
-#ifndef __ARCHI_CHIPS_GAP_PULP_H__
-#define __ARCHI_CHIPS_GAP_PULP_H__
-
-#include "archi/chips/gap/properties.h"
-#include "archi/chips/gap/memory_map.h"
-#include "archi/chips/gap/apb_soc.h"
-
-#include "archi/fll/fll_v1.h"
+#ifndef __ARCHI_MAESTRO_MAESTRO_V1_H__
+#define __ARCHI_MAESTRO_MAESTRO_V1_H__
 
 #endif

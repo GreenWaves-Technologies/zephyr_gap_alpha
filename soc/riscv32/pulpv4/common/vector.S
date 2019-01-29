@@ -7,13 +7,14 @@
 #include <toolchain.h>
 
 /* exports */
-GTEXT(__start)
+GTEXT(__cluster_start)
 
 /* imports */
 GTEXT(__reset)
 GTEXT(__irq_wrapper)
 
-SECTION_FUNC(vectors, __start)
+
+	.section .vectors, "ax"
 	.option norvc;
 
 	/* Call __irq_wrapper for all interrupts */
@@ -24,7 +25,8 @@ SECTION_FUNC(vectors, __start)
 
 	/* Call __reset for reset vector */
 	.org 0x80
-	jal x0, __reset
+__cluster_start:
+	jal x0, __cluster_pe_entry
 
 	/* Illegal instruction */
 	jal x0, __irq_wrapper

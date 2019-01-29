@@ -1,11 +1,12 @@
 #include <device.h>
 #include <init.h>
+#include <hal/pulp.h>
 
 #if defined(CONFIG_PRINTK) || defined(CONFIG_STDOUT_CONSOLE)
 
 static int console_out(int c)
 {
-	*(volatile int *)(0x1a110000) = c;
+	*(volatile int *)(0x1a110000 + (hal_core_id()<<3) + (hal_cluster_id()<<7)) = c;
 	return c;
 }
 #endif

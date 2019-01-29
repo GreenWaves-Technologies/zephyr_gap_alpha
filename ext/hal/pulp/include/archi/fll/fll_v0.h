@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 GreenWaves Technologies
+ * Copyright (C) 2018 ETH Zurich, University of Bologna
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
+#ifndef __ARCHI_FLL_FLL_V0_H__
+#define __ARCHI_FLL_FLL_V0_H__
 
-#ifndef __ARCHI_CHIPS_GAP_PULP_H__
-#define __ARCHI_CHIPS_GAP_PULP_H__
-
-#include "archi/chips/gap/properties.h"
-#include "archi/chips/gap/memory_map.h"
-#include "archi/chips/gap/apb_soc.h"
-
-#include "archi/fll/fll_v1.h"
+#define SOC_FLL_CONFIG_REG_1  ( ARCHI_FLL_ADDR + 0x04 )
+#define SOC_FLL_CONFIG_REG_2  ( ARCHI_FLL_ADDR + 0x08 )
+#define SOC_FLL_CONFIG_REG_3  ( ARCHI_FLL_ADDR + 0x0C )
+#define SOC_FLL_LOCK_REG      ( ARCHI_FLL_ADDR + 0x20 )
 
 #endif

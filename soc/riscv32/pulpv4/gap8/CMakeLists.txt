@@ -1,1 +1,3 @@
-zephyr_sources()
+zephyr_sources(
+  pmu.c
+)
