@@ -277,6 +277,12 @@ int pi_cluster_send_task_to_cl(struct pi_device *device, struct cluster_task *ta
 
 
 
+int pi_cluster_close(struct pi_device *cluster_dev)
+{
+  return 0;
+}
+
+
 void pi_wait_on_task(struct pi_fc_task *task)
 {
   while(!task->done)
@@ -306,6 +312,15 @@ void pi_cluster_conf_init(struct cluster_driver_conf *conf)
 void pi_open_from_conf(struct pi_device *device, void *conf)
 {
   device->config = conf;
+}
+
+static inline void apb_soc_status_set(unsigned int value) {
+  pulp_write32(ARCHI_APB_SOC_CTRL_ADDR + APB_SOC_CORESTATUS_OFFSET, value | (1<<APB_SOC_STATUS_EOC_BIT));
+}
+
+void __platform_exit(int err)
+{
+  apb_soc_status_set(err);
 }
 
 

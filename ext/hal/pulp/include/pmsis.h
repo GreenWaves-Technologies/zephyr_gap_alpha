@@ -17,6 +17,8 @@
 #ifndef __PMSIS__H__
 #define __PMSIS__H__
 
+#include <zephyr.h>
+
 struct cluster_task_implem
 {
   int pending;
@@ -52,12 +54,14 @@ extern int pmsis_exit_value;
 static inline int pmsis_kickoff(void *arg)
 {
   ((void (*)())arg)();
-  return pmsis_exit_value;
+  return 0;
 }
+
+void __platform_exit(int err);
 
 static inline void pmsis_exit(int err)
 {
-  pmsis_exit_value = err;
+  __platform_exit(err);
 }
 
 
