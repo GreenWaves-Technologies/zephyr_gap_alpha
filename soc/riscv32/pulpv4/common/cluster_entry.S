@@ -4,6 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/* 
+ * Authors: Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
+ */
+
 
 #include <toolchain.h>
 #include <archi/pulp.h>
@@ -11,73 +15,314 @@
 #include <archi/eu/eu_v3.h>
 #include "soc.h"
 
-/* exports */
-GTEXT(__cluster_pe_entry)
+    .section .cluster.text , "ax"
 
-__cluster_pe_entry:
+/* exports */
+GTEXT(__rt_pe_start)
+
+__rt_pe_start:
+
+    csrr    a0, 0xF14
+    andi    a1, a0, 0x1f
+    srli    a0, a0, 5
+    
+    // Activate a few events
+    li      t0, (1<<PULP_DISPATCH_EVENT) | (1<<PULP_HW_BAR_EVENT) | (1<<PULP_MUTEX_EVENT)
+    li      t1, ARCHI_EU_DEMUX_ADDR
+    sw      t0, EU_CORE_MASK(t1)
+
+#ifdef ARCHI_HAS_CC
+    li      t2, ARCHI_CC_CORE_ID
+    bne     a1, t2, __rt_slave_start
+#else
+    bne     a1, x0, __rt_slave_start
+#endif
 
     // Prepare few values that will be kept in saved registers to optimize the loop
-    csrr    s1, 0xF14
-    andi    s0, s1, 0x1f
-    srli    s1, s1, 5
+    la      s0, cl_cluster_data
+    li      s3, ARCHI_EU_DEMUX_ADDR
+    li      s4, 1<<CLUSTER_CALL_EVT
+    la      s5, __rt_master_event
+    la      s7, cluster_tasks
+    li      t2, 4
+    mul     t2, t2, a0
+    add     s7, s7, t2
+#if defined(ARCHI_HAS_FC)
+#if defined(ITC_VERSION)
+    li      s9, ARCHI_FC_ITC_ADDR + ITC_STATUS_SET_OFFSET
+    li      s8, 1<<FC_TASK_END
+#else
+    li      s9, ARCHI_FC_GLOBAL_ADDR + ARCHI_FC_PERIPHERALS_OFFSET + ARCHI_FC_EU_OFFSET + EU_SW_EVENTS_AREA_BASE + EU_CORE_TRIGG_SW_EVENT + (FC_TASK_END << 2)
+    li      s8, 1
+#endif
+#else
+    // In case there is no FC, the event must be sent to cluster 0 event unit
+    li      s9, ARCHI_CLUSTER_PERIPHERALS_GLOBAL_ADDR(0) + ARCHI_EU_OFFSET + EU_SW_EVENTS_AREA_BASE + EU_CORE_TRIGG_SW_EVENT + (FC_TASK_END << 2)
+    li      s8, 1    
+#endif
+#ifndef ARCHI_HAS_NO_DISPATCH
+    la      s10, __rt_set_slave_stack
+    ori     s10, s10, 1
+#endif
+    j       __rt_master_loop
+
+
+
+__rt_master_event:
+    beq     s6, x0, __rt_master_loop
+
+__rt_push_event_to_fc_retry:
+    // Now we have to push the termination event to FC side
+    // First wait until the slot for posting events is free
+    lw      t0, 0(s7)
+    bne     t0, x0, __rt_push_event_to_fc_wait
+
+    // Push it
+    sw      s6, 0(s7)
+
+    // And notify the FC side with a HW event in case it is sleeping
+    sw      s8, 0(s9)
+
+
+__rt_master_loop:
+    // Check if a task is ready in the pool
+    lw      t3, 0(s0)
+    // Check if a call is ready, e.g. if nb_pe is not zero
+    // otherwise go to sleep
+    beq     t3, x0, __rt_master_sleep
+
+__rt_master_loop_update_next:
+    lw      t4, RT_CLUSTER_TASK_NEXT(t3)
+    sw      x0, RT_CLUSTER_TASK_PENDING(t3)
+    sw      t4, 0(s0)
+
+    // Check again next pointer in case it was updated by the FC.
+    // If so, do it it again as this will ensure that either we see the new
+    // value or the FC sees our write
+    lw      t5, RT_CLUSTER_TASK_NEXT(t3)
+    bne     t4, t5, __rt_master_loop_update_next
+
+#ifdef __RT_USE_PROFILE
+    li      a0, GV_SEMIHOSTING_VCD_DUMP_TRACE
+    lw      a1, %tiny(__rt_pe_trace)(x0)
+    li      a2, 0
+    li      a4, 0
+    ebreak
+#endif
+
+#ifdef __RT_USE_ASSERT
+    csrwi   0x7D0, 0
+#endif
+
+    // Reads entry point information
+    lw      a0, RT_CLUSTER_TASK_ARG(t3)
+    lw      t0, RT_CLUSTER_TASK_ENTRY(t3)
+    lw      sp, RT_CLUSTER_TASK_STACKS(t3)
+    lw      t1, RT_CLUSTER_TASK_STACK_SIZE(t3)
+    lw      t2, RT_CLUSTER_TASK_SLAVE_STACK_SIZE(t3)
+    lw      t5, RT_CLUSTER_TASK_CORE_MASK(t3)
+    lw      s6, RT_CLUSTER_TASK_COMPLETION_CALLBACK(t3)
+    lw      t6, RT_CLUSTER_TASK_NB_CORES(t3)
+    mv      ra, s5
+
+#ifdef ARCHI_NO_L1_TINY
+    la      t4, cluster_nb_active_pe
+    sw      t6, 0(t4)
+#else
+    sw      t6, %tiny(cluster_nb_active_pe)(x0)
+#endif
+
+#ifdef __RT_USE_ASSERT
+    // Update stack checking information
+    beqz    t1, __rt_no_stack_check
+    sub     t4, sp, t1
+    csrw    0x7D1, t4
+    csrw    0x7D2, sp
+    csrwi   0x7D0, 1
+#endif
+
+__rt_no_stack_check:
+    // Whatever the number of cores, we need to setup the barrier as the master code is compiled to use it
+    sw      t5, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_TEAM_CONFIG(s3)
+#ifdef ARCHI_HAS_CC
+    // When we have a cluster controller, don't configure the slave barrier
+    // if we don't have have any slave
+    beqz    t5, __rt_master_no_slave_barrier
+#endif
+    sw      t5, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TRIGGER_MASK(s3)
+    sw      t5, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TARGET_MASK(s3)
+__rt_master_no_slave_barrier:
+#ifdef ARCHI_HAS_CC
+    ori     t6, t5, 1<<ARCHI_CC_CORE_ID
+    sw      t6, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TRIGGER_MASK + EU_BARRIER_SIZE(s3)
+    sw      t6, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TARGET_MASK + EU_BARRIER_SIZE(s3)
+#endif
+
+    // Set stack on slaves
+    // For that we push first the function for setting stack, then the stack size and the base
+    p.beqimm t5, 0, __rt_master_loop_no_slave
+    sw      s10, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s3)
+    sw      t2, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s3)
+    sw      sp, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s3)
+
+__rt_master_loop_no_slave:
+
+    // Call the entry point, this will directly come back to the master loop
+    jr      t0
+
+
+__rt_master_sleep:
+#ifdef __RT_USE_PROFILE
+    li      a0, GV_SEMIHOSTING_VCD_DUMP_TRACE
+    lw      a1, %tiny(__rt_pe_trace)(x0)
+    li      a2, 1
+    ebreak
+#endif
+
+    sw      s4, EU_CORE_MASK_OR(s3)
+    p.elw   x0, EU_CORE_EVENT_WAIT_CLEAR(s3)
+    sw      s4, EU_CORE_MASK_AND(s3)
+    j       __rt_master_loop
+
+
+
+
+__rt_push_event_to_fc_wait:
+    sw      s4, EU_CORE_MASK_OR(s3)
+    p.elw   x0, EU_CORE_EVENT_WAIT_CLEAR(s3)
+    sw      s4, EU_CORE_MASK_AND(s3)
+    j       __rt_push_event_to_fc_retry
+
+
+
+
+
+
+
+__rt_slave_start:
+
+
+#ifndef ARCHI_HAS_NO_DISPATCH
 
     li      s2, ARCHI_EU_DEMUX_ADDR
-
-    bne     s0, x0, cluster_slave_loop
-
-
-
-cluster_master_entry:
-
-    // Prepare few values that will be kept in saved registers to optimize the loop
-    li      s3, 1<<CLUSTER_CALL_EVT
-    la      s4, cluster_entry_stub
-    li      s6, ARCHI_FC_GLOBAL_ADDR + ARCHI_FC_PERIPHERALS_OFFSET + ARCHI_FC_EU_OFFSET + EU_SW_EVENTS_AREA_BASE + EU_CORE_TRIGG_SW_EVENT + (FC_TASK_END << 2)
-
-cluster_master_loop:
-
-    // Check if a task is ready, otherwise go to sleep.
-    lw      s5, %tiny(cluster_first_task_cl)(x0)
-    beq     s5, x0, cluster_master_sleep
-
-    // Reads entry point information.
-    lw      t0, CLUSTER_TASK_T_NEXT(s5)
-    lw      t1, CLUSTER_TASK_T_MASTER_STACK_SIZE(s5)
-    lw      sp, CLUSTER_TASK_T_STACKS(s5)
-    mv      a0, s5
-    add     sp, sp, t1
-
-    // Update the task list. As the head is not null, cluster part is
-    // owning it and is allowed to modify it.
-    sw      t0, %tiny(cluster_first_task_cl)(x0)
-
-    // Call entry stub, which will take care of other task aspects.
-    jalr    ra, s4
-
-    // Now notify FC side that the task is over, it will terminates it
-    // and possiblity update task list head if it is null.
-    sw      x0, CLUSTER_TASK_T_PENDING(s5)
-    sw      x0, 0(s6)
-
-    j       cluster_master_loop
-
-cluster_master_sleep:
-    // Just wait for 
-    sw      s3, EU_CORE_MASK_OR(s2)
-    p.elw   x0, EU_CORE_EVENT_WAIT_CLEAR(s2)
-    sw      s3, EU_CORE_MASK_AND(s2)
-    j       cluster_master_loop
+    csrr    s3, 0xF14
+    and     s3, s3, 0x1f
+    la      s4, __rt_fork_return
+    la      s5, __rt_wait_for_dispatch
+    j       __rt_wait_for_dispatch
 
 
+__rt_fork_return:
 
-cluster_slave_loop:
+#ifdef ARCHI_HAS_CC
+    // When the cluster has a controller barrier 0 is used for normal team barrier
+    // and barrier 1 is used for end of offload
+    p.elw   t0, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TRIGGER_WAIT_CLEAR + EU_BARRIER_SIZE(s2)
+#else
+#ifndef ARCHI_HAS_NO_BARRIER
+    p.elw   t0, EU_BARRIER_DEMUX_OFFSET + EU_HW_BARR_TRIGGER_WAIT_CLEAR(s2)
+#else
+    jal     ra, __rt_team_barrier
+#endif
+#endif
+    
 
-    j       cluster_slave_wait_for_dispatch
+__rt_wait_for_dispatch:
 
-
-
-cluster_slave_wait_for_dispatch:
+#ifdef __RT_USE_PROFILE
+    li      a0, GV_SEMIHOSTING_VCD_DUMP_TRACE
+    slli    t2, s3, 2
+    lw      a1, %tiny(__rt_pe_trace)(t2)
+    li      a2, 1
+    ebreak
+#endif
 
     // Wait for PC + arg information from dispatcher
     p.elw   t0, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s2)
     p.elw   a0, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s2)
+
+#ifdef __RT_USE_PROFILE
+    mv      t1, a0
+    li      a0, GV_SEMIHOSTING_VCD_DUMP_TRACE
+    slli    t2, s3, 2
+    lw      a1, %tiny(__rt_pe_trace)(t2)
+    li      a2, 0
+    li      a4, 1
+    ebreak
+    mv      a0, t1
+#endif
+
+    // Check if this is an entry with a barrier at the end (fork entry)
+    andi    t1, t0, 1
+    bne     t1, zero, __rt_other_entry
+
+__rt_fork_entry:
+
+    // Jump to the handler and prepare r9 to jump back just before the main loop
+    add     ra, s4, x0
+    jr      t0
+
+__rt_other_entry:
+
+  // Jump to the handler and prepare r9 to jump back directly to the main loop
+    add     ra, s5, x0
+    jr      t0
+
+
+
+  .global __rt_set_slave_stack
+__rt_set_slave_stack:
+
+#ifdef __RT_USE_ASSERT
+    csrwi   0x7D0, 0
+#endif
+
+    // Multiply the stack size by the core ID and add the stack base to get our stack
+    p.elw   t0, EU_DISPATCH_DEMUX_OFFSET + EU_DISPATCH_FIFO_ACCESS(s2)
+#ifdef ARCHI_HAS_CC
+    // If the cluster has a cluster controller, the first slave has core ID 0
+    // and thus we need to take the next stack
+    addi     s3, s3, 1
+#endif
+    p.mul   t4, s3, a0
+    add     sp, t4, t0
+
+#ifdef __RT_USE_ASSERT
+    beqz    a0, __rt_no_stack_check_end
+    sub     t4, sp, a0
+    csrw    0x7D1, t4
+    csrw    0x7D2, sp
+    csrwi   0x7D0, 1
+#endif
+__rt_no_stack_check_end:
+    ret
+
+#else
+
+  li      s3, ARCHI_EU_DEMUX_ADDR
+  li      s4, 1<<RT_CLUSTER_CALL_EVT
+  la      s1, __rt_stacks_slave_base
+  la      s2, __rt_stack_slave_size
+  csrr    s5, CSR_MHARTID
+  andi    s5, s5, 0x1f
+
+
+__rt_slave_loop:
+  lw      sp, 0(s1)
+  lw      t2, 0(s2)
+
+  beqz    t2, __rt_slave_wait_call
+
+  mul     t2, t2, s5
+  add     sp, sp, t2
+
+  j       __rt_pe_entry
+
+__rt_slave_wait_call:
+    sw      s4, EU_CORE_MASK_OR(s3)
+    p.elw   x0, EU_CORE_EVENT_WAIT_CLEAR(s3)
+    sw      s4, EU_CORE_MASK_AND(s3)
+    j       __rt_slave_loop
+
+#endif
+

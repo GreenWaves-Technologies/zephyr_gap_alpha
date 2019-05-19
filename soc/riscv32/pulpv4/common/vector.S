@@ -26,7 +26,7 @@ GTEXT(__irq_wrapper)
 	/* Call __reset for reset vector */
 	.org 0x80
 __cluster_start:
-	jal x0, __cluster_pe_entry
+	jal x0, __rt_pe_start
 
 	/* Illegal instruction */
 	jal x0, __irq_wrapper

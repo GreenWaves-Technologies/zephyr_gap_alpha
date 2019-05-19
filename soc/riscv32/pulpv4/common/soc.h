@@ -12,7 +12,7 @@
 #define __GAP_SOC_H_
 
 /* CSR Registers */
-#define PULP_MESTATUS              0x7C0 /* Machine Exception Status Register */
+#define PULP_MESTATUS              0x300 /* Machine Exception Status Register */
 #define PULP_LPSTART0              0x7B0 /* Hardware Loop 0 Start Register */
 #define PULP_LPEND0                0x7B1 /* Hardware Loop 0 End Register */
 #define PULP_LPCOUNT0              0x7B2 /* Hardware Loop 0 Count Register */
@@ -47,7 +47,8 @@
  * Default MSTATUS register value to restore from stack
  * upon scheduling a thread for the first time
  */
-#define SOC_MSTATUS_DEF_RESTORE    SOC_MSTATUS_IEN
+#define RI5CY_MSTATUS_MPIE_EN      (1U << 7)
+#define SOC_MSTATUS_DEF_RESTORE    RI5CY_MSTATUS_MPIE_EN
 
 /* SOC-specific MCAUSE bitfields */
 #define SOC_MCAUSE_EXP_MASK        0x1F           /* Exception code Mask */
@@ -132,13 +133,17 @@ void cluster_alloc_init();
 
 #define FC_TASK_END 1
 
-#define CLUSTER_TASK_T_NEXT              0
-#define CLUSTER_TASK_T_NB_CORES          4
-#define CLUSTER_TASK_T_ENTRY             8
-#define CLUSTER_TASK_T_ARGS              12
-#define CLUSTER_TASK_T_STACKS            16
-#define CLUSTER_TASK_T_MASTER_STACK_SIZE 20
-#define CLUSTER_TASK_T_SLAVE_STACK_SIZE  24
-#define CLUSTER_TASK_T_PENDING           28
+#define RT_CLUSTER_TASK_ENTRY                 (0*4)
+#define RT_CLUSTER_TASK_ARG                   (1*4)
+#define RT_CLUSTER_TASK_STACKS                (2*4)
+#define RT_CLUSTER_TASK_STACK_SIZE            (3*4)
+#define RT_CLUSTER_TASK_SLAVE_STACK_SIZE      (4*4)
+#define RT_CLUSTER_TASK_NB_CORES              (5*4)
+#define RT_CLUSTER_TASK_COMPLETION_CALLBACK   (6*4)
+#define RT_CLUSTER_TASK_STACK_ALLOCATED       (7*4)
+#define RT_CLUSTER_TASK_NEXT                  (8*4)
+#define RT_CLUSTER_TASK_PENDING               (9*4)
+#define RT_CLUSTER_TASK_CORE_MASK             (10*4)
+
 
 #endif /* __GAP_SOC_H_ */

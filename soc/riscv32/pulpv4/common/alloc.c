@@ -35,7 +35,7 @@ static __attribute__((section(".l1_ram"))) rt_alloc_t cluster_alloc_l1;
   The rationnal is to get rid of the usual meta data overhead attached to traditionnal memory allocators.
 */
 
-void cluster_alloc_info(struct cluster *cluster, int *_size, void **first_chunk, int *_nb_chunks)
+void cluster_alloc_info(int *_size, void **first_chunk, int *_nb_chunks)
 {
   rt_alloc_t *a = &cluster_alloc_l1;
 
@@ -61,7 +61,7 @@ void cluster_alloc_info(struct cluster *cluster, int *_size, void **first_chunk,
   irq_unlock(key);
 }
 
-void cluster_alloc_dump(struct cluster *cluster)
+void cluster_alloc_dump()
 {
   rt_alloc_t *a = &cluster_alloc_l1;
   
@@ -92,7 +92,7 @@ static void alloc_init(rt_alloc_t *a, void *_chunk, int size)
   }
 }
 
-void *cluster_alloc(struct cluster *cluster, int size)
+void *cluster_alloc(int size)
 {
   rt_alloc_t *a = &cluster_alloc_l1;
 
@@ -126,9 +126,9 @@ void *cluster_alloc(struct cluster *cluster, int size)
   }
 }
 
-void *cluster_alloc_align(struct cluster *cluster, int size, int align)
+void *cluster_alloc_align(int size, int align)
 {
-  if (align < (int)sizeof(rt_alloc_chunk_t)) return cluster_alloc(cluster, size);
+  if (align < (int)sizeof(rt_alloc_chunk_t)) return cluster_alloc(size);
 
   // As the user must give back the size of the allocated chunk when freeing it, we must allocate
   // an aligned chunk with exactly the right size
@@ -136,7 +136,7 @@ void *cluster_alloc_align(struct cluster *cluster, int size, int align)
 
   // We reserve enough space to free the remaining room before and after the aligned chunk
   int size_align = size + align + sizeof(rt_alloc_chunk_t) * 2;
-  unsigned int result = (unsigned int)cluster_alloc(cluster, size_align);
+  unsigned int result = (unsigned int)cluster_alloc(size_align);
   if (!result) return NULL;
 
   unsigned int result_align = (result + align - 1) & -align;
@@ -149,16 +149,16 @@ void *cluster_alloc_align(struct cluster *cluster, int size, int align)
     if (result_align - result < sizeof(rt_alloc_chunk_t)) result_align += align;
 
     // Free the header
-    cluster_free(cluster, (void *)result, headersize);
+    cluster_free((void *)result, headersize);
   }
 
   // Now free what remains after
-  cluster_free(cluster, (unsigned char *)(result_align + size), size_align - headersize - size);
+  cluster_free((unsigned char *)(result_align + size), size_align - headersize - size);
 
   return (void *)result_align;
 }
 
-void __attribute__((noinline)) cluster_free(struct cluster *cluster, void *_chunk, int size)
+void __attribute__((noinline)) cluster_free(void *_chunk, int size)
 
 {
   rt_alloc_t *a = &cluster_alloc_l1;

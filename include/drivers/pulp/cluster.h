@@ -14,6 +14,7 @@
 extern "C" {
 #endif
 
+#if 0
 struct cluster_task
 {
   struct cluster_task *next;
@@ -47,18 +48,20 @@ int cluster_send_task(struct cluster *cluster, struct cluster_task *cl_task);
 
 int cluster_disable(struct cluster *cluster);
 
-void cluster_alloc_info(struct cluster *cluster, int *size, void **first_chunk, int *nb_chunks);
-
-void cluster_alloc_dump(struct cluster *cluster);
-
-void *cluster_alloc(struct cluster *cluster, int size);
-
-void cluster_free(struct cluster *cluster, void *chunk, int size);
-
-void *cluster_alloc_align(struct cluster *cluster, int size, int align);
-
 
 #define CLUSTER_TASK(cluster_entry) { .entry=cluster_entry, .stacks=NULL, .master_stack_size=0, .slave_stack_size=0, .nb_cores=0 }
+
+#endif
+
+void cluster_alloc_info(int *size, void **first_chunk, int *nb_chunks);
+
+void cluster_alloc_dump();
+
+void *cluster_alloc(int size);
+
+void cluster_free(void *chunk, int size);
+
+void *cluster_alloc_align(int size, int align);
 
 #ifdef __cplusplus
 }
