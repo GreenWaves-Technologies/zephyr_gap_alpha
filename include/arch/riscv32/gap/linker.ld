@@ -88,6 +88,7 @@ SECTIONS
 		_image_text_start = .;
 		*(.text)
 		*(".text.*")
+		*(.cluster.text)
 		*(.gnu.linkonce.t.*)
 		*(.eh_frame)
 	} GROUP_LINK_IN(L2_RAM)

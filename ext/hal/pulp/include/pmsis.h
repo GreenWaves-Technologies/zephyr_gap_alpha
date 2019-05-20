@@ -19,13 +19,13 @@
 
 #include <zephyr.h>
 
-struct cluster_task_implem
+struct pi_cluster_task_implem
 {
   int pending;
   int core_mask;
 };
 
-struct pi_fc_task_implem
+struct pi_task_implem
 {
   struct k_work workitem;
   struct k_poll_event event;
@@ -33,8 +33,8 @@ struct pi_fc_task_implem
 };
 
 
-#define CLUSTER_TASK_IMPLEM struct cluster_task_implem implem
-#define PI_FC_TASK_IMPLEM struct pi_fc_task_implem implem
+#define CLUSTER_TASK_IMPLEM struct pi_cluster_task_implem implem
+#define PI_TAsK_IMPLEM struct pi_task_implem implem
 #define PMSIS_NO_INLINE_INCLUDE
 
 #include "pmsis.h"
@@ -48,6 +48,8 @@ struct pi_fc_task_implem
 #include "rtos/malloc/pmsis_l1_malloc.h"
 #include "rtos/malloc/pmsis_l2_malloc.h"
 #include "hyperbus/hyperram.h"
+
+#include "implem/implem.h"
 
 extern int pmsis_exit_value;
 

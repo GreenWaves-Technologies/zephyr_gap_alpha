@@ -129,7 +129,7 @@ void cluster_alloc_init();
 //    post again another event in case it was working
 //  - There was a remote request handled so the cluster can check iif the one is
 //    waiting for has finished
-#define CLUSTER_CALL_EVT 1
+#define RT_CLUSTER_CALL_EVT 1
 
 #define FC_TASK_END 1
 

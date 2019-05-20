@@ -41,7 +41,7 @@ __rt_pe_start:
     // Prepare few values that will be kept in saved registers to optimize the loop
     la      s0, cl_cluster_data
     li      s3, ARCHI_EU_DEMUX_ADDR
-    li      s4, 1<<CLUSTER_CALL_EVT
+    li      s4, 1<<RT_CLUSTER_CALL_EVT
     la      s5, __rt_master_event
     la      s7, cluster_tasks
     li      t2, 4

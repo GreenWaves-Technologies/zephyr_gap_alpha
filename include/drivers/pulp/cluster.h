@@ -15,12 +15,12 @@ extern "C" {
 #endif
 
 #if 0
-struct cluster_task
+struct pi_cluster_task
 {
-  struct cluster_task *next;
+  struct pi_cluster_task *next;
   int nb_cores;
   // entry function and its argument(s)
-  void (*entry)(struct cluster_task *);
+  void (*entry)(struct pi_cluster_task *);
   void *arg;
   // pointer to first stack, and size for each cores
   void *stacks;
@@ -42,9 +42,9 @@ struct cluster *cluster_get(struct device *device, int cid);
 
 int cluster_enable(struct cluster *cluster);
 
-int cluster_send_task_async(struct cluster *cluster, struct cluster_task *cl_task, struct k_poll_signal *signal);
+int cluster_send_task_async(struct cluster *cluster, struct pi_cluster_task *cl_task, struct k_poll_signal *signal);
 
-int cluster_send_task(struct cluster *cluster, struct cluster_task *cl_task);
+int cluster_send_task(struct cluster *cluster, struct pi_cluster_task *cl_task);
 
 int cluster_disable(struct cluster *cluster);
 
