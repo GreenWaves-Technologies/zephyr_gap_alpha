@@ -1,26 +1,50 @@
 /*
- * Copyright (c) 2018 ETH Zurich, University of Bologna, GreenWaves Technologies
+ * Copyright (C) 2018 ETH Zurich and University of Bologna
  *
- * SPDX-License-Identifier: Apache-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /* 
  * Authors: Germain Haugou, ETH (germain.haugou@iis.ee.ethz.ch)
  */
 
+#ifdef __RT_USE_PROFILE
+#include "archi/gvsoc/gvsoc.h"
+#endif
 
-#include <toolchain.h>
-#include <archi/pulp.h>
-#include <archi/pulp.h>
-#include <archi/eu/eu_v3.h>
-#include "soc.h"
+#include "data.h"
+#include "archi/pulp.h"
+#if defined(ITC_VERSION)
+#include "archi/itc/itc_v1.h"
+#endif
+#include "archi/eu/eu_v3.h"
+#include "archi/cluster_ctrl/cluster_ctrl_v2.h"
 
     .section .cluster.text , "ax"
-
-/* exports */
-GTEXT(__rt_pe_start)
-
+#ifdef RV_ISA_RV32
+  .global __rt_pe_start
 __rt_pe_start:
+
+
+  .global __rt_set_slave_stack
+__rt_set_slave_stack:
+
+#else
+
+  .global __rt_pe_start
+__rt_pe_start:
+
+#endif
 
     csrr    a0, 0xF14
     andi    a1, a0, 0x1f
@@ -39,25 +63,26 @@ __rt_pe_start:
 #endif
 
     // Prepare few values that will be kept in saved registers to optimize the loop
-    la      s0, cl_cluster_data
+    la      s0, __rt_cluster_pool
     li      s3, ARCHI_EU_DEMUX_ADDR
     li      s4, 1<<RT_CLUSTER_CALL_EVT
     la      s5, __rt_master_event
-    la      s7, cluster_tasks
-    li      t2, 4
+    la      s7, __rt_fc_cluster_data
+    li      t2, RT_FC_CLUSTER_DATA_T_SIZEOF
     mul     t2, t2, a0
     add     s7, s7, t2
+    addi    s7, s7, RT_FC_CLUSTER_DATA_T_EVENTS
 #if defined(ARCHI_HAS_FC)
 #if defined(ITC_VERSION)
     li      s9, ARCHI_FC_ITC_ADDR + ITC_STATUS_SET_OFFSET
-    li      s8, 1<<FC_TASK_END
+    li      s8, 1<<RT_FC_ENQUEUE_EVENT
 #else
-    li      s9, ARCHI_FC_GLOBAL_ADDR + ARCHI_FC_PERIPHERALS_OFFSET + ARCHI_FC_EU_OFFSET + EU_SW_EVENTS_AREA_BASE + EU_CORE_TRIGG_SW_EVENT + (FC_TASK_END << 2)
+    li      s9, ARCHI_FC_GLOBAL_ADDR + ARCHI_FC_PERIPHERALS_OFFSET + ARCHI_FC_EU_OFFSET + EU_SW_EVENTS_AREA_BASE + EU_CORE_TRIGG_SW_EVENT + (RT_FC_ENQUEUE_EVENT << 2)
     li      s8, 1
 #endif
 #else
     // In case there is no FC, the event must be sent to cluster 0 event unit
-    li      s9, ARCHI_CLUSTER_PERIPHERALS_GLOBAL_ADDR(0) + ARCHI_EU_OFFSET + EU_SW_EVENTS_AREA_BASE + EU_CORE_TRIGG_SW_EVENT + (FC_TASK_END << 2)
+    li      s9, ARCHI_CLUSTER_PERIPHERALS_GLOBAL_ADDR(0) + ARCHI_EU_OFFSET + EU_SW_EVENTS_AREA_BASE + EU_CORE_TRIGG_SW_EVENT + (RT_FC_ENQUEUE_EVENT << 2)
     li      s8, 1    
 #endif
 #ifndef ARCHI_HAS_NO_DISPATCH
@@ -126,10 +151,10 @@ __rt_master_loop_update_next:
     mv      ra, s5
 
 #ifdef ARCHI_NO_L1_TINY
-    la      t4, cluster_nb_active_pe
+    la      t4, __rt_cluster_nb_active_pe
     sw      t6, 0(t4)
 #else
-    sw      t6, %tiny(cluster_nb_active_pe)(x0)
+    sw      t6, %tiny(__rt_cluster_nb_active_pe)(x0)
 #endif
 
 #ifdef __RT_USE_ASSERT

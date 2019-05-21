@@ -133,7 +133,7 @@ void cluster_alloc_init();
 //    waiting for has finished
 #define RT_CLUSTER_CALL_EVT 1
 
-#define FC_TASK_END 1
+#define RT_FC_ENQUEUE_EVENT 1
 
 #define RT_CLUSTER_TASK_ENTRY                 (0*4)
 #define RT_CLUSTER_TASK_ARG                   (1*4)
@@ -146,6 +146,10 @@ void cluster_alloc_init();
 #define RT_CLUSTER_TASK_NEXT                  (8*4)
 #define RT_CLUSTER_TASK_PENDING               (9*4)
 #define RT_CLUSTER_TASK_CORE_MASK             (10*4)
+
+
+#define RT_FC_CLUSTER_DATA_T_SIZEOF       (1*4)
+#define RT_FC_CLUSTER_DATA_T_EVENTS       0
 
 
 #endif /* __GAP_SOC_H_ */

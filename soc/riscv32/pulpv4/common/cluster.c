@@ -38,12 +38,12 @@ typedef struct {
   cl_cluster_data_t *cl_data;
   void *stacks;
   int stacks_size;
-} cluster_data_t;
+} rt_fc_cluster_data_t;
 
-static cluster_data_t clusters[NB_CLUSTERS];
-pi_task_t *cluster_tasks[NB_CLUSTERS];
-L1_TINY_DATA cl_cluster_data_t cl_cluster_data;
-L1_TINY_DATA int cluster_nb_active_pe;
+static rt_fc_cluster_data_t clusters[NB_CLUSTERS];
+pi_task_t *__rt_fc_cluster_data[NB_CLUSTERS];
+L1_TINY_DATA cl_cluster_data_t __rt_cluster_pool;
+L1_TINY_DATA int __rt_cluster_nb_active_pe;
 
 extern void __cluster_start();
 
@@ -62,14 +62,14 @@ static void cluster_irq_handler(struct device *device)
 {
   for (int cid=0; cid<NB_CLUSTERS; cid++)
   {
-    pi_task_t *task = cluster_tasks[cid];
+    pi_task_t *task = __rt_fc_cluster_data[cid];
     if (task != NULL)
     {
       // Everytime a task is finished, first check if we can update the queue head
       // as it is not updated by cluster side to avoid race conditions.
       // At least this task won't be there anymore after we update, and maybe even
       // more tasks, which is not an issue, as we compare against the head.
-      cluster_data_t *cluster = &clusters[cid];
+      rt_fc_cluster_data_t *cluster = &clusters[cid];
       cl_cluster_data_t *cl_cluster = cluster->cl_data;
 
       struct pi_cluster_task *current = cl_cluster->first_call_fc;
@@ -88,7 +88,7 @@ static void cluster_irq_handler(struct device *device)
         cl_cluster->first_call_fc = current->next;
       }
 
-      cluster_tasks[cid] = NULL;
+      __rt_fc_cluster_data[cid] = NULL;
 
       __rt_event_handle_end_of_task(task);
     }
@@ -99,18 +99,18 @@ static int cluster_init(struct device *device)
 {
   ARG_UNUSED(device);
 
-  IRQ_CONNECT(FC_TASK_END, 0,
+  IRQ_CONNECT(RT_FC_ENQUEUE_EVENT, 0,
         cluster_irq_handler, NULL, 0);
-  irq_enable(FC_TASK_END);
+  irq_enable(RT_FC_ENQUEUE_EVENT);
 
   for (int cid=0; cid<NB_CLUSTERS; cid++)
   {
-    cluster_data_t *cluster = &clusters[cid];
+    rt_fc_cluster_data_t *cluster = &clusters[cid];
     cluster->cid = cid;
     cluster->enable_count = 0;
     k_mutex_init(&cluster->mutex);
 
-    cluster_tasks[cid] = NULL;
+    __rt_fc_cluster_data[cid] = NULL;
   }
 
   return 0;
@@ -121,7 +121,7 @@ int pi_cluster_open(struct pi_device *cluster_dev)
 {
   struct cluster_driver_conf *conf = (struct cluster_driver_conf *)cluster_dev->config;
 
-  cluster_data_t *cluster = &clusters[conf->id];
+  rt_fc_cluster_data_t *cluster = &clusters[conf->id];
   cluster_dev->data = cluster;
 
   k_mutex_lock(&cluster->mutex, K_FOREVER);
@@ -134,7 +134,7 @@ int pi_cluster_open(struct pi_device *cluster_dev)
   {
     cluster_power_up();
 
-    cl_cluster_data_t *cluster_data = (cl_cluster_data_t *)cluster_tiny_addr(cid, &cl_cluster_data);
+    cl_cluster_data_t *cluster_data = (cl_cluster_data_t *)cluster_tiny_addr(cid, &__rt_cluster_pool);
 
     cluster->cl_data = cluster_data;
     cluster_data->first_call_fc = NULL;
@@ -171,13 +171,13 @@ void task_init(pi_task_t *task)
 
 int pi_cluster_send_task_to_cl_async(struct pi_device *device, struct pi_cluster_task *task, pi_task_t *async_task)
 {
-  cluster_data_t *cluster = device->data;
+  rt_fc_cluster_data_t *cluster = device->data;
 
   task_init(async_task);
 
   k_mutex_lock(&cluster->mutex, K_FOREVER);
 
-  cluster_data_t *data = (cluster_data_t *)device->data;
+  rt_fc_cluster_data_t *data = (rt_fc_cluster_data_t *)device->data;
   cl_cluster_data_t *cl_data = data->cl_data;
 
   if (task->nb_cores == 0)
@@ -323,14 +323,14 @@ void __rt_cluster_push_fc_event(struct pi_task *event)
   eu_mutex_lock(eu_mutex_addr(0));
 
   // First wait until the slot to post events is free
-  while(cluster_tasks[pi_cluster_id()] != NULL)
+  while(__rt_fc_cluster_data[pi_cluster_id()] != NULL)
   {
     eu_evt_maskWaitAndClr(1<<RT_CLUSTER_CALL_EVT);
   }
 
   // Push the event and notify the FC with a HW evet in case it
   // is sleeping
-  cluster_tasks[pi_cluster_id()] = event;
+  __rt_fc_cluster_data[pi_cluster_id()] = event;
 #ifdef ITC_VERSION
   hal_itc_status_set(1<<RT_CLUSTER_CALL_EVT);
 #else

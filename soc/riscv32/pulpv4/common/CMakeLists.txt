@@ -13,7 +13,6 @@ zephyr_sources(
   soc_event_eu.c
   cluster.c
   alloc.c
-  cluster_entry.S
   extern_alloc.c
   pulprt_wrapper.c
   )
