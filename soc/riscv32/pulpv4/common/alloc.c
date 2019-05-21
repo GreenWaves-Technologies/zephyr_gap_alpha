@@ -7,15 +7,12 @@
 #include <drivers/pulp/cluster.h>
 #include <string.h>
 #include <stdio.h>
+#include <pmsis.h>
+#include "alloc.h"
+#include "cluster.h"
+#include "implem/implem.h"
+#include <init.h>
 
-typedef struct rt_alloc_block_s {
-  int                      size;
-  struct rt_alloc_block_s *next;
-} rt_alloc_chunk_t;
-
-typedef struct {
-  rt_alloc_chunk_t *first_free;
-} rt_alloc_t;
 
 // Allocate at least 4 bytes to avoid misaligned accesses when parsing free blocks 
 // and actually 8 to fit free chunk header size and make sure a e free block to always have
@@ -23,7 +20,8 @@ typedef struct {
 // This also requires the initial chunk to be correctly aligned.
 #define MIN_CHUNK_SIZE 8
 
-static __attribute__((section(".l1_ram"))) rt_alloc_t cluster_alloc_l1;
+L2_DATA rt_alloc_t alloc_l1[NB_CLUSTERS];
+L2_DATA rt_alloc_t alloc_l2;
 
 #define ALIGN_UP(addr,size)   (((addr) + (size) - 1) & ~((size) - 1))
 #define ALIGN_DOWN(addr,size) ((addr) & ~((size) - 1))
@@ -35,10 +33,8 @@ static __attribute__((section(".l1_ram"))) rt_alloc_t cluster_alloc_l1;
   The rationnal is to get rid of the usual meta data overhead attached to traditionnal memory allocators.
 */
 
-void cluster_alloc_info(int *_size, void **first_chunk, int *_nb_chunks)
+void rt_alloc_info(rt_alloc_t *a, int *_size, void **first_chunk, int *_nb_chunks)
 {
-  rt_alloc_t *a = &cluster_alloc_l1;
-
   int key = irq_lock();
 
   if (first_chunk) *first_chunk = a->first_free;
@@ -61,10 +57,8 @@ void cluster_alloc_info(int *_size, void **first_chunk, int *_nb_chunks)
   irq_unlock(key);
 }
 
-void cluster_alloc_dump()
+void rt_alloc_dump(rt_alloc_t *a)
 {
-  rt_alloc_t *a = &cluster_alloc_l1;
-  
   int key = irq_lock();
 
   rt_alloc_chunk_t *pt = a->first_free;
@@ -92,10 +86,8 @@ static void alloc_init(rt_alloc_t *a, void *_chunk, int size)
   }
 }
 
-void *cluster_alloc(int size)
+void *rt_alloc(rt_alloc_t *a, int size)
 {
-  rt_alloc_t *a = &cluster_alloc_l1;
-
   int key = irq_lock();
 
   rt_alloc_chunk_t *pt = a->first_free, *prev = 0;
@@ -126,9 +118,9 @@ void *cluster_alloc(int size)
   }
 }
 
-void *cluster_alloc_align(int size, int align)
+void *rt_alloc_align(rt_alloc_t *a, int size, int align)
 {
-  if (align < (int)sizeof(rt_alloc_chunk_t)) return cluster_alloc(size);
+  if (align < (int)sizeof(rt_alloc_chunk_t)) return rt_alloc(a, size);
 
   // As the user must give back the size of the allocated chunk when freeing it, we must allocate
   // an aligned chunk with exactly the right size
@@ -136,7 +128,7 @@ void *cluster_alloc_align(int size, int align)
 
   // We reserve enough space to free the remaining room before and after the aligned chunk
   int size_align = size + align + sizeof(rt_alloc_chunk_t) * 2;
-  unsigned int result = (unsigned int)cluster_alloc(size_align);
+  unsigned int result = (unsigned int)rt_alloc(a, size_align);
   if (!result) return NULL;
 
   unsigned int result_align = (result + align - 1) & -align;
@@ -149,20 +141,18 @@ void *cluster_alloc_align(int size, int align)
     if (result_align - result < sizeof(rt_alloc_chunk_t)) result_align += align;
 
     // Free the header
-    cluster_free((void *)result, headersize);
+    rt_free(a, (void *)result, headersize);
   }
 
   // Now free what remains after
-  cluster_free((unsigned char *)(result_align + size), size_align - headersize - size);
+  rt_free(a, (unsigned char *)(result_align + size), size_align - headersize - size);
 
   return (void *)result_align;
 }
 
-void __attribute__((noinline)) cluster_free(void *_chunk, int size)
+void __attribute__((noinline)) rt_free(rt_alloc_t *a, void *_chunk, int size)
 
 {
-  rt_alloc_t *a = &cluster_alloc_l1;
-  
   int key = irq_lock();
 
   rt_alloc_chunk_t *chunk = (rt_alloc_chunk_t *)_chunk;
@@ -199,18 +189,90 @@ void __attribute__((noinline)) cluster_free(void *_chunk, int size)
 
 extern unsigned char __l1_heap_start;
 extern unsigned char __l1_heap_size;
+extern unsigned char __l2_heap_start;
+extern unsigned char __l2_heap_size;
 
-static inline void *cluster_l1_base(int cid)
+void l1_alloc_init(int cid)
 {
-  return ((char *)&__l1_heap_start);
+  // TODO add support for multiple clusters
+  alloc_init(&alloc_l1[cid], ((char *)&__l1_heap_start), (int)&__l1_heap_size);
+
 }
 
-static inline int cluster_l1_size(int cid)
+static int l2_alloc_init()
 {
-  return (int)&__l1_heap_size;
+  alloc_init(&alloc_l2, ((char *)&__l2_heap_start), (int)&__l2_heap_size);
+  return 0;
 }
 
-void cluster_alloc_init()
+void __rt_alloc_cluster_req(void *_req)
 {
-  alloc_init(&cluster_alloc_l1, cluster_l1_base(0), cluster_l1_size(0));
+  pi_cl_alloc_req_t *req = (pi_cl_alloc_req_t *)_req;
+  req->result = rt_alloc(&alloc_l2, req->size);
+  req->done = 1;
+  __rt_cluster_notif_req_done(req->cid);
 }
+
+void __rt_free_cluster_req(void *_req)
+{
+  pi_cl_free_req_t *req = (pi_cl_free_req_t *)_req;
+  rt_free(&alloc_l2, req->chunk, req->size);
+  req->done = 1;
+  __rt_cluster_notif_req_done(req->cid);
+}
+
+
+void rt_alloc_cluster(int flags, int size, pi_cl_alloc_req_t *req)
+{
+  req->flags = flags;
+  req->size = size;
+  req->cid = pi_cluster_id();
+  req->done = 0;
+  req->event.implem.kpoll = 0;
+  pi_task_callback(&req->event, __rt_alloc_cluster_req, (void *)req);
+  __rt_cluster_push_fc_event(&req->event);
+}
+
+void rt_free_cluster(int flags, void *chunk, int size, pi_cl_free_req_t *req)
+{
+  req->flags = flags;
+  req->size = size;
+  req->chunk = chunk;
+  req->cid = pi_cluster_id();
+  req->done = 0;
+  req->event.implem.kpoll = 0;
+  pi_task_callback(&req->event, __rt_free_cluster_req, (void *)req);
+  __rt_cluster_push_fc_event(&req->event);
+}
+
+void pi_cl_l2_malloc(int size, pi_cl_alloc_req_t *req)
+{
+  rt_alloc_cluster(0, size, (pi_cl_alloc_req_t *)req);
+}
+
+void pi_cl_l2_free(void *chunk, int size, pi_cl_free_req_t *req)
+{
+  rt_free_cluster(0, chunk, size, (pi_cl_free_req_t *)req);
+}
+
+void *pmsis_l1_malloc(uint32_t size)
+{
+  return rt_alloc(&alloc_l1[0], size);
+}
+
+void pmsis_l1_malloc_free(void *_chunk, int size)
+{
+  rt_free(&alloc_l1[0], _chunk, size);
+}
+
+void *pmsis_l2_malloc(uint32_t size)
+{
+  return rt_alloc(&alloc_l2, size);
+}
+
+void pmsis_l2_malloc_free(void *_chunk, int size)
+{
+  rt_free(&alloc_l2, _chunk, size);
+}
+
+SYS_INIT(l2_alloc_init, PRE_KERNEL_1, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);

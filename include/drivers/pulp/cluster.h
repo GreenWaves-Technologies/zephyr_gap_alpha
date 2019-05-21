@@ -53,16 +53,6 @@ int cluster_disable(struct cluster *cluster);
 
 #endif
 
-void cluster_alloc_info(int *size, void **first_chunk, int *nb_chunks);
-
-void cluster_alloc_dump();
-
-void *cluster_alloc(int size);
-
-void cluster_free(void *chunk, int size);
-
-void *cluster_alloc_align(int size, int align);
-
 #ifdef __cplusplus
 }
 #endif

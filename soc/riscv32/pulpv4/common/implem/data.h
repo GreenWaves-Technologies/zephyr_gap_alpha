@@ -73,4 +73,8 @@ struct pi_cl_hyperram_free_req_s {
   char cid;
 };
 
+#define L1_DATA __attribute__((section(".l1_ram")))
+#define L1_TINY_DATA __attribute__ ((tiny)) __attribute__((section(".l1_tiny_ram")))
+#define L2_DATA __attribute__((section(".l2_ram")))
+
 #endif

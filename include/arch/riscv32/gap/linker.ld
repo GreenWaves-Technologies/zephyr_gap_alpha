@@ -187,6 +187,9 @@ SECTIONS
      *(".l2_ram.*")
   }  GROUP_LINK_IN(L2_RAM)
 
+  __l2_heap_start = ALIGN(4);
+  __l2_heap_size = LENGTH(L2_RAM) - __l2_heap_start + ORIGIN(L2_RAM);
+
   SECTION_DATA_PROLOGUE(l1_tiny_ram,(NOLOAD),)
   {
      *(.l1_tiny_ram)

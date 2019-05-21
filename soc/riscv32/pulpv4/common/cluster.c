@@ -10,10 +10,8 @@
 #include <device.h>
 #include <init.h>
 #include <pmsis.h>
-
-#define NB_CLUSTERS 1
-
-#define L1_TINY_DATA __attribute__ ((tiny)) __attribute__((section(".l1_tiny_ram")))
+#include "alloc.h"
+#include "implem/implem.h"
 
 static inline void *cluster_tiny_addr(int cid, void *data)
 {
@@ -61,10 +59,25 @@ static inline void rt_compiler_barrier() {
 }
 
 
-static void cluster_handler(struct k_work *work)
+static void end_of_task_handler(struct k_work *work)
 {
   pi_task_t *task = (pi_task_t *)((intptr_t)work - (intptr_t)&(((pi_task_t *)NULL)->implem.workitem));
   ((void (*)(void *))task->arg[0])((void *)task->arg[1]);
+}
+
+void handle_end_of_task(pi_task_t *task)
+{
+  task->done = 1;
+  if (task->implem.kpoll)
+  {
+    k_poll_signal_raise(&task->implem.signal, 0);
+  }
+
+  if (task->id == FC_TASK_CALLBACK_ID)
+  {
+    k_work_init(&task->implem.workitem, end_of_task_handler);
+    k_work_submit(&task->implem.workitem);
+  }
 }
 
 static void cluster_irq_handler(struct device *device)
@@ -98,14 +111,8 @@ static void cluster_irq_handler(struct device *device)
       }
 
       cluster_tasks[cid] = NULL;
-      task->done = 1;
-      k_poll_signal_raise(&task->implem.signal, 0);
 
-      if (task->id == FC_TASK_CALLBACK_ID)
-      {
-        k_work_init(&task->implem.workitem, cluster_handler);
-        k_work_submit(&task->implem.workitem);
-      }
+      handle_end_of_task(task);
     }
   }
 }
@@ -158,7 +165,7 @@ int pi_cluster_open(struct pi_device *cluster_dev)
 
     // Initialize now the L1 allocator for this cluster as the metadata
     // are stored there and could not be accessed before.
-    cluster_alloc_init();
+    l1_alloc_init(cid);
 
     __asm__ __volatile__ ("" : : : "memory");
 
@@ -175,14 +182,20 @@ int pi_cluster_open(struct pi_device *cluster_dev)
   return 0;
 }
 
+void task_init(pi_task_t *task)
+{
+  task->done = 0;
+  task->implem.kpoll = 1;
+  k_poll_signal_init(&task->implem.signal);
+
+  k_poll_event_init(&task->implem.event, K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &task->implem.signal);
+}
 
 int pi_cluster_send_task_to_cl_async(struct pi_device *device, struct pi_cluster_task *task, pi_task_t *async_task)
 {
   cluster_data_t *cluster = device->data;
 
-  k_poll_signal_init(&async_task->implem.signal);
-
-  k_poll_event_init(&async_task->implem.event, K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &async_task->implem.signal);
+  task_init(async_task);
 
   k_mutex_lock(&cluster->mutex, K_FOREVER);
 
@@ -208,10 +221,10 @@ int pi_cluster_send_task_to_cl_async(struct pi_device *device, struct pi_cluster
     if (data->stacks == NULL || stacks_size != data->stacks_size)
     {
       if (data->stacks)
-        cluster_free(data->stacks, data->stacks_size);
+        rt_free(&alloc_l1[cluster->cid], data->stacks, data->stacks_size);
 
       data->stacks_size = stacks_size;
-      data->stacks = cluster_alloc(stacks_size);
+      data->stacks = rt_alloc(&alloc_l1[cluster->cid], stacks_size);
       if (data->stacks == NULL)
         goto error;
     }
@@ -264,6 +277,9 @@ error:
 int pi_cluster_send_task_to_cl(struct pi_device *device, struct pi_cluster_task *task)
 {
   pi_task_t fc_task;
+
+  pi_task(&fc_task);
+  task_init(&fc_task);
 
   if (pi_cluster_send_task_to_cl_async(device, task, &fc_task))
   {
@@ -321,6 +337,34 @@ static inline void apb_soc_status_set(unsigned int value) {
 void __platform_exit(int err)
 {
   apb_soc_status_set(err);
+}
+
+
+void __rt_cluster_push_fc_event(struct pi_task *event)
+{
+  eu_mutex_lock(eu_mutex_addr(0));
+
+  // First wait until the slot to post events is free
+  while(cluster_tasks[pi_cluster_id()] != NULL)
+  {
+    eu_evt_maskWaitAndClr(1<<RT_CLUSTER_CALL_EVT);
+  }
+
+  // Push the event and notify the FC with a HW evet in case it
+  // is sleeping
+  cluster_tasks[pi_cluster_id()] = event;
+#ifdef ITC_VERSION
+  hal_itc_status_set(1<<RT_CLUSTER_CALL_EVT);
+#else
+  eu_evt_trig(eu_evt_trig_fc_addr(RT_CLUSTER_CALL_EVT), 0);
+#endif
+
+  eu_mutex_unlock(eu_mutex_addr(0));
+}
+
+void pi_yield()
+{
+  k_yield();
 }
 
 

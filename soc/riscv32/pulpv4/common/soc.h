@@ -11,6 +11,8 @@
 #ifndef __GAP_SOC_H_
 #define __GAP_SOC_H_
 
+#define NB_CLUSTERS 1
+
 /* CSR Registers */
 #define PULP_MESTATUS              0x300 /* Machine Exception Status Register */
 #define PULP_LPSTART0              0x7B0 /* Hardware Loop 0 Start Register */
