@@ -45,7 +45,19 @@ static inline uint32_t pi_is_fc()
   return pi_cluster_id() == ARCHI_FC_CID;
 }
 
+void __rt_event_handle_end_of_task(pi_task_t *task);
 
+
+#include "hal/udma/udma_v2.h"
+#include "hal/soc_eu/soc_eu_v1.h"
+#include "hal/eu/eu_v3.h"
+#include "hal/udma/hyper/udma_hyper_v1.h"
+
+#include "extern_alloc.h"
+
+#include "../cluster.h"
+
+#include "pulprt_wrapper.h"
 
 //#include "rt/implem/utils.h"
 #include "implem/hyperram.h"

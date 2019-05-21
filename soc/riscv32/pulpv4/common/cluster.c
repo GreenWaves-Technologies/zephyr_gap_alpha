@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <drivers/pulp/cluster.h>
 #include <hal/pulp.h>
 #include <zephyr.h>
 #include <device.h>
@@ -59,27 +58,6 @@ static inline void rt_compiler_barrier() {
 }
 
 
-static void end_of_task_handler(struct k_work *work)
-{
-  pi_task_t *task = (pi_task_t *)((intptr_t)work - (intptr_t)&(((pi_task_t *)NULL)->implem.workitem));
-  ((void (*)(void *))task->arg[0])((void *)task->arg[1]);
-}
-
-void handle_end_of_task(pi_task_t *task)
-{
-  task->done = 1;
-  if (task->implem.kpoll)
-  {
-    k_poll_signal_raise(&task->implem.signal, 0);
-  }
-
-  if (task->id == FC_TASK_CALLBACK_ID)
-  {
-    k_work_init(&task->implem.workitem, end_of_task_handler);
-    k_work_submit(&task->implem.workitem);
-  }
-}
-
 static void cluster_irq_handler(struct device *device)
 {
   for (int cid=0; cid<NB_CLUSTERS; cid++)
@@ -112,7 +90,7 @@ static void cluster_irq_handler(struct device *device)
 
       cluster_tasks[cid] = NULL;
 
-      handle_end_of_task(task);
+      __rt_event_handle_end_of_task(task);
     }
   }
 }

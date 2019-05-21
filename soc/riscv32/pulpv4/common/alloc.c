@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <drivers/pulp/cluster.h>
 #include <string.h>
 #include <stdio.h>
 #include <pmsis.h>

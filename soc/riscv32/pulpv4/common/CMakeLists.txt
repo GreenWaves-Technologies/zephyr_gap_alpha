@@ -14,6 +14,6 @@ zephyr_sources(
   cluster.c
   alloc.c
   cluster_entry.S
-  hyperram-v1.c
   extern_alloc.c
+  pulprt_wrapper.c
   )
