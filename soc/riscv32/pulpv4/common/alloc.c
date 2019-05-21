@@ -32,7 +32,7 @@ L2_DATA rt_alloc_t alloc_l2;
   The rationnal is to get rid of the usual meta data overhead attached to traditionnal memory allocators.
 */
 
-void rt_alloc_info(rt_alloc_t *a, int *_size, void **first_chunk, int *_nb_chunks)
+void rt_user_alloc_info(rt_alloc_t *a, int *_size, void **first_chunk, int *_nb_chunks)
 {
   int key = irq_lock();
 
@@ -56,7 +56,7 @@ void rt_alloc_info(rt_alloc_t *a, int *_size, void **first_chunk, int *_nb_chunk
   irq_unlock(key);
 }
 
-void rt_alloc_dump(rt_alloc_t *a)
+void rt_user_alloc_dump(rt_alloc_t *a)
 {
   int key = irq_lock();
 
@@ -85,7 +85,7 @@ static void alloc_init(rt_alloc_t *a, void *_chunk, int size)
   }
 }
 
-void *rt_alloc(rt_alloc_t *a, int size)
+void *rt_user_alloc(rt_alloc_t *a, int size)
 {
   int key = irq_lock();
 
@@ -117,9 +117,9 @@ void *rt_alloc(rt_alloc_t *a, int size)
   }
 }
 
-void *rt_alloc_align(rt_alloc_t *a, int size, int align)
+void *rt_user_alloc_align(rt_alloc_t *a, int size, int align)
 {
-  if (align < (int)sizeof(rt_alloc_chunk_t)) return rt_alloc(a, size);
+  if (align < (int)sizeof(rt_alloc_chunk_t)) return rt_user_alloc(a, size);
 
   // As the user must give back the size of the allocated chunk when freeing it, we must allocate
   // an aligned chunk with exactly the right size
@@ -127,7 +127,7 @@ void *rt_alloc_align(rt_alloc_t *a, int size, int align)
 
   // We reserve enough space to free the remaining room before and after the aligned chunk
   int size_align = size + align + sizeof(rt_alloc_chunk_t) * 2;
-  unsigned int result = (unsigned int)rt_alloc(a, size_align);
+  unsigned int result = (unsigned int)rt_user_alloc(a, size_align);
   if (!result) return NULL;
 
   unsigned int result_align = (result + align - 1) & -align;
@@ -140,16 +140,16 @@ void *rt_alloc_align(rt_alloc_t *a, int size, int align)
     if (result_align - result < sizeof(rt_alloc_chunk_t)) result_align += align;
 
     // Free the header
-    rt_free(a, (void *)result, headersize);
+    rt_user_free(a, (void *)result, headersize);
   }
 
   // Now free what remains after
-  rt_free(a, (unsigned char *)(result_align + size), size_align - headersize - size);
+  rt_user_free(a, (unsigned char *)(result_align + size), size_align - headersize - size);
 
   return (void *)result_align;
 }
 
-void __attribute__((noinline)) rt_free(rt_alloc_t *a, void *_chunk, int size)
+void __attribute__((noinline)) rt_user_free(rt_alloc_t *a, void *_chunk, int size)
 
 {
   int key = irq_lock();
@@ -207,7 +207,7 @@ static int l2_alloc_init()
 void __rt_alloc_cluster_req(void *_req)
 {
   pi_cl_alloc_req_t *req = (pi_cl_alloc_req_t *)_req;
-  req->result = rt_alloc(&alloc_l2, req->size);
+  req->result = rt_user_alloc(&alloc_l2, req->size);
   req->done = 1;
   __rt_cluster_notif_req_done(req->cid);
 }
@@ -215,7 +215,7 @@ void __rt_alloc_cluster_req(void *_req)
 void __rt_free_cluster_req(void *_req)
 {
   pi_cl_free_req_t *req = (pi_cl_free_req_t *)_req;
-  rt_free(&alloc_l2, req->chunk, req->size);
+  rt_user_free(&alloc_l2, req->chunk, req->size);
   req->done = 1;
   __rt_cluster_notif_req_done(req->cid);
 }
@@ -256,22 +256,22 @@ void pi_cl_l2_free(void *chunk, int size, pi_cl_free_req_t *req)
 
 void *pmsis_l1_malloc(uint32_t size)
 {
-  return rt_alloc(&alloc_l1[0], size);
+  return rt_user_alloc(&alloc_l1[0], size);
 }
 
 void pmsis_l1_malloc_free(void *_chunk, int size)
 {
-  rt_free(&alloc_l1[0], _chunk, size);
+  rt_user_free(&alloc_l1[0], _chunk, size);
 }
 
 void *pmsis_l2_malloc(uint32_t size)
 {
-  return rt_alloc(&alloc_l2, size);
+  return rt_user_alloc(&alloc_l2, size);
 }
 
 void pmsis_l2_malloc_free(void *_chunk, int size)
 {
-  rt_free(&alloc_l2, _chunk, size);
+  rt_user_free(&alloc_l2, _chunk, size);
 }
 
 SYS_INIT(l2_alloc_init, PRE_KERNEL_1, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);

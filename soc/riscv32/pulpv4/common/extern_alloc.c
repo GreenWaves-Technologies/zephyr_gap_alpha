@@ -56,14 +56,14 @@
   The rationnal is to get rid of the usual meta data overhead attached to traditionnal memory allocators.
 */
 
-static inline void __rt_free_chunk(rt_alloc_chunk_extern_t *pt)
+static inline void __rt_user_free_chunk(rt_alloc_chunk_extern_t *pt)
 {
-  rt_free(&alloc_l2, (void *)pt, sizeof(rt_alloc_chunk_extern_t));
+  rt_user_free(rt_alloc_l2(), (void *)pt, sizeof(rt_alloc_chunk_extern_t));
 }
 
 static inline rt_alloc_chunk_extern_t *__rt_alloc_chunk()
 {
-  return (rt_alloc_chunk_extern_t *)rt_alloc(&alloc_l2, sizeof(rt_alloc_chunk_extern_t));
+  return (rt_alloc_chunk_extern_t *)rt_user_alloc(rt_alloc_l2(), sizeof(rt_alloc_chunk_extern_t));
 }
 
 void rt_extern_alloc_info(rt_extern_alloc_t *a, int *_size, void **first_chunk, int *_nb_chunks)
@@ -127,7 +127,7 @@ int rt_extern_alloc_init(rt_extern_alloc_t *a, void *addr, int size)
 
 void rt_extern_alloc_deinit(rt_extern_alloc_t *a)
 {
-  __rt_free_chunk(a->first_free);
+  __rt_user_free_chunk(a->first_free);
 }
 
 
@@ -146,7 +146,7 @@ void *rt_extern_alloc(rt_extern_alloc_t *a, int size)
       // This special case is interesting to support when we allocate aligned pages, to limit fragmentation
       if (prev) prev->next = pt->next; else a->first_free = pt->next;
       void *addr = (void *)pt->addr;
-      __rt_free_chunk(pt);
+      __rt_user_free_chunk(pt);
       return addr;
     } else {
       // The free block is bigger than needed
@@ -223,7 +223,7 @@ int __attribute__((noinline)) rt_extern_free(rt_extern_alloc_t *a, void *addr, i
       /* Coalesce with previous */
       prev->size += chunk->size;
       prev->next = chunk->next;
-      __rt_free_chunk(chunk);
+      __rt_user_free_chunk(chunk);
     } else {
       prev->next = chunk;
     }

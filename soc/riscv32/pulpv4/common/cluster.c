@@ -24,25 +24,9 @@ struct cluster_config {
 struct cluster_data {
 };
 
-typedef struct
-{
-  struct pi_cluster_task *first_call_fc_for_cl;
-  struct pi_cluster_task *first_call_fc;
-  struct pi_cluster_task *last_call_fc;
-} cl_cluster_data_t;
-
-typedef struct {
-  int cid;
-  struct k_mutex mutex;
-  int enable_count;
-  cl_cluster_data_t *cl_data;
-  void *stacks;
-  int stacks_size;
-} rt_fc_cluster_data_t;
-
-static rt_fc_cluster_data_t clusters[NB_CLUSTERS];
+rt_fc_cluster_data_t clusters[NB_CLUSTERS];
 pi_task_t *__rt_fc_cluster_data[NB_CLUSTERS];
-L1_TINY_DATA cl_cluster_data_t __rt_cluster_pool;
+L1_TINY_DATA rt_cluster_call_pool_t __rt_cluster_pool;
 L1_TINY_DATA int __rt_cluster_nb_active_pe;
 
 extern void __cluster_start();
@@ -53,47 +37,6 @@ static inline int rt_nb_pe()
   return ARCHI_CLUSTER_NB_PE;
 }
 
-static inline void rt_compiler_barrier() {
-  __asm__ __volatile__ ("" : : : "memory");
-}
-
-
-static void cluster_irq_handler(struct device *device)
-{
-  for (int cid=0; cid<NB_CLUSTERS; cid++)
-  {
-    pi_task_t *task = __rt_fc_cluster_data[cid];
-    if (task != NULL)
-    {
-      // Everytime a task is finished, first check if we can update the queue head
-      // as it is not updated by cluster side to avoid race conditions.
-      // At least this task won't be there anymore after we update, and maybe even
-      // more tasks, which is not an issue, as we compare against the head.
-      rt_fc_cluster_data_t *cluster = &clusters[cid];
-      cl_cluster_data_t *cl_cluster = cluster->cl_data;
-
-      struct pi_cluster_task *current = cl_cluster->first_call_fc;
-      while (current && current->implem.pending == 0)
-      {
-        current = current->next;
-      }
-
-      if (current == NULL)
-      {
-        cl_cluster->first_call_fc = NULL;
-        cl_cluster->last_call_fc = NULL;
-      }
-      else
-      {
-        cl_cluster->first_call_fc = current->next;
-      }
-
-      __rt_fc_cluster_data[cid] = NULL;
-
-      __rt_event_handle_end_of_task(task);
-    }
-  }
-}
 
 static int cluster_init(struct device *device)
 {
@@ -134,9 +77,9 @@ int pi_cluster_open(struct pi_device *cluster_dev)
   {
     cluster_power_up();
 
-    cl_cluster_data_t *cluster_data = (cl_cluster_data_t *)cluster_tiny_addr(cid, &__rt_cluster_pool);
+    rt_cluster_call_pool_t *cluster_data = (rt_cluster_call_pool_t *)cluster_tiny_addr(cid, &__rt_cluster_pool);
 
-    cluster->cl_data = cluster_data;
+    cluster->pool = cluster_data;
     cluster_data->first_call_fc = NULL;
     cluster_data->last_call_fc = NULL;
     cluster_data->first_call_fc_for_cl = NULL;
@@ -162,113 +105,11 @@ int pi_cluster_open(struct pi_device *cluster_dev)
 
 void task_init(pi_task_t *task)
 {
-  task->done = 0;
   task->implem.kpoll = 1;
   k_poll_signal_init(&task->implem.signal);
 
   k_poll_event_init(&task->implem.event, K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &task->implem.signal);
 }
-
-int pi_cluster_send_task_to_cl_async(struct pi_device *device, struct pi_cluster_task *task, pi_task_t *async_task)
-{
-  rt_fc_cluster_data_t *cluster = device->data;
-
-  task_init(async_task);
-
-  k_mutex_lock(&cluster->mutex, K_FOREVER);
-
-  rt_fc_cluster_data_t *data = (rt_fc_cluster_data_t *)device->data;
-  cl_cluster_data_t *cl_data = data->cl_data;
-
-  if (task->nb_cores == 0)
-    task->nb_cores = rt_nb_pe();
-
-  if (task->stacks == NULL)
-  {
-    if (task->stack_size == 0)
-    {
-      task->stack_size = 0x400;
-      task->slave_stack_size = 0x400;
-    }
-
-    if (task->slave_stack_size == 0)
-      task->slave_stack_size = task->stack_size;
-
-    int stacks_size = task->stack_size + task->slave_stack_size * (task->nb_cores - 1);
-
-    if (data->stacks == NULL || stacks_size != data->stacks_size)
-    {
-      if (data->stacks)
-        rt_free(&alloc_l1[cluster->cid], data->stacks, data->stacks_size);
-
-      data->stacks_size = stacks_size;
-      data->stacks = rt_alloc(&alloc_l1[cluster->cid], stacks_size);
-      if (data->stacks == NULL)
-        goto error;
-    }
-
-    task->stacks = data->stacks;
-  }
-
-  async_task->done = 0;
-
-  task->completion_callback = async_task;
-#ifdef ARCHI_HAS_CC
-  task->implem.core_mask = (1<<(task->nb_cores-1)) - 1;
-#else
-  task->implem.core_mask = (1<<task->nb_cores) - 1;
-#endif
-
-  task->next = NULL;
-
-  rt_compiler_barrier();
-
-  if (cl_data->last_call_fc)
-  {
-    cl_data->last_call_fc->next = task;
-  }
-  else
-  {
-    cl_data->first_call_fc = task;
-  }
-
-  cl_data->last_call_fc = task;
-
-  rt_compiler_barrier();
-  
-  if (cl_data->first_call_fc_for_cl == NULL)
-    cl_data->first_call_fc_for_cl = task;
-
-  rt_compiler_barrier();
-  eu_evt_trig(eu_evt_trig_cluster_addr(data->cid, RT_CLUSTER_CALL_EVT), 0);
-
-  k_mutex_unlock(&cluster->mutex);
-
-  return 0;
-
-error:
-  k_mutex_unlock(&cluster->mutex);
-  return -1;
-}
-
-
-int pi_cluster_send_task_to_cl(struct pi_device *device, struct pi_cluster_task *task)
-{
-  pi_task_t fc_task;
-
-  pi_task(&fc_task);
-  task_init(&fc_task);
-
-  if (pi_cluster_send_task_to_cl_async(device, task, &fc_task))
-  {
-    return -1;
-  }
-
-  pi_wait_on_task(&fc_task);
-
-  return 0;
-}
-
 
 
 int pi_cluster_close(struct pi_device *cluster_dev)
@@ -288,6 +129,7 @@ void pi_wait_on_task(struct pi_task *task)
 
 struct pi_task *pi_task_callback(struct pi_task *task, void (*callback)(void*), void *arg)
 {
+  __rt_task_create(task);
   task->id = FC_TASK_CALLBACK_ID;
   task->arg[0] = (uint32_t)callback;
   task->arg[1] = (uint32_t)arg;

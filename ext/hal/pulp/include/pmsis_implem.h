@@ -14,11 +14,26 @@
  * limitations under the License.
  */
 
-#ifndef __PMSIS__H__
-#define __PMSIS__H__
+#ifndef __PMSIS_IMPLEM_H__
+#define __PMSIS_IMPLEM_H__
 
-#include "pmsis_decl.h"
-#include "pmsis_implem.h"
+#include "implem/implem.h"
+
+extern int pmsis_exit_value;
+
+static inline int pmsis_kickoff(void *arg)
+{
+  ((void (*)())arg)();
+  return 0;
+}
+
+void __platform_exit(int err);
+
+static inline void pmsis_exit(int err)
+{
+  __platform_exit(err);
+}
+
 
 #endif
 
