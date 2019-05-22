@@ -27,7 +27,7 @@ static inline uint32_t pi_cluster_id();
 
 static inline uint32_t pi_is_fc();
 
-static inline uint32_t pi_nb_cluster_cores();
+static inline uint32_t pi_nb_custer_cores();
 
 
 #ifndef PMSIS_NO_INLINE_INCLUDE

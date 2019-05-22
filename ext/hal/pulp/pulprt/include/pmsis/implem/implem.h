@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 GreenWaves Technologies
+ * Copyright (C) 2018 ETH Zurich, University of Bologna and GreenWaves Technologies
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,10 @@
  * limitations under the License.
  */
 
+#ifndef __PMSIS_IMPLEM_IMPLEM_H__
+#define __PMSIS_IMPLEM_IMPLEM_H__
 
-#ifndef __ARCHI_CHIPS_GAP_PULP_H__
-#define __ARCHI_CHIPS_GAP_PULP_H__
+#include "pmsis/implem/perf.h"
 
-#include "archi/chips/gap/properties.h"
-#include "archi/chips/gap/memory_map.h"
-#include "archi/chips/gap/apb_soc.h"
-
-#include "archi/fll/fll_v1.h"
-#include "archi/riscv/pcer_v1.h"
 
 #endif

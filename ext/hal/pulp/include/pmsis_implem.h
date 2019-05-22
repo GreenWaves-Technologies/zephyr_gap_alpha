@@ -18,6 +18,7 @@
 #define __PMSIS_IMPLEM_H__
 
 #include "implem/implem.h"
+#include "pmsis/implem/implem.h"
 
 extern int pmsis_exit_value;
 

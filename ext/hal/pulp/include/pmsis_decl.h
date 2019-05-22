@@ -49,6 +49,8 @@ struct pi_task_implem
 #include "rtos/malloc/pmsis_l1_malloc.h"
 #include "rtos/malloc/pmsis_l2_malloc.h"
 #include "hyperbus/hyperram.h"
+#include "drivers/perf.h"
+#include "chips/gap8/drivers/gap8_perf.h"
 #include "implem/data.h"
 
 

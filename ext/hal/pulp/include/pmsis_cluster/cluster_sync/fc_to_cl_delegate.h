@@ -17,14 +17,17 @@
 #ifndef __FC_TO_CL_H__
 #define __FC_TO_CL_H__
 
+/// @cond IMPLEM
+
 #include "pmsis_cluster/cl_pmsis_types.h"
 #include "pmsis_types.h"
+
 /**
- * @ingroup groupCluster
+ * @ingroup groupDrivers
  */
 
 /**
- * @defgroup clusterDriver
+ * @defgroup clusterDriver Cluster driver
  *
  * Primitives to pilot the cluster
  * Can only be use from mcu side
@@ -33,7 +36,7 @@
 
 
 /**
- * @addtogroup groupCluster
+ * @addtogroup clusterDriver
  * @{
  */
 
@@ -70,8 +73,8 @@ int pi_cluster_open(struct pi_device *device);
  * \param cluster_id ID of the cluster to poweron
  * \param async_task asynchronous task to be executed at the end of operation
  */
-int pi_cluster_open_with_conf_async(struct pi_device *device,
-        void *conf, pi_task_t *async_task);
+int pi_cluster_open_async(struct pi_device *device,
+        pi_task_t *async_task);
 
 /** \brief send a task to the cluster
  * Calling this function will result in the cluster executing task passed as a parameter
@@ -154,4 +157,7 @@ uint8_t pi_cluster_is_on(void);
 /**
  * @} end of Team group
  */
+
+/// @endcond
+
 #endif

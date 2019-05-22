@@ -69,7 +69,7 @@ int pi_cluster_send_task_to_cl_async(struct pi_device *device, struct pi_cluster
   int lock = __rt_cluster_lock(data);
 
   __rt_task_init(async_task);
-
+  
   task->implem.pending = 1;
 
   rt_cluster_call_pool_t *cl_data = data->pool;
@@ -150,8 +150,6 @@ int pi_cluster_send_task_to_cl(struct pi_device *device, struct pi_cluster_task 
   pi_task_t fc_task;
 
   pi_task(&fc_task);
-
-  printf("ASYNC %p\n", &fc_task);
 
   if (pi_cluster_send_task_to_cl_async(device, task, &fc_task))
   {
