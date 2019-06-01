@@ -39,7 +39,7 @@ struct pi_cl_free_req_s {
   char cid;
 };
 
-struct pi_cl_hyperram_req_s {
+struct pi_cl_hyper_req_s {
   struct pi_device *device;
   void *addr;
   uint32_t hyper_addr;
@@ -47,7 +47,7 @@ struct pi_cl_hyperram_req_s {
   int32_t stride;
   uint32_t length;
   pi_task_t event;
-  struct pi_cl_hyperram_req_s *next;
+  struct pi_cl_hyper_req_s *next;
   int done;
   unsigned char cid;
   unsigned char is_write;
