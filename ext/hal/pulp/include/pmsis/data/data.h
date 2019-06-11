@@ -42,6 +42,7 @@ struct pi_task_implem
 #include "pmsis/data/udma.h"
 #include "pmsis/data/cpi.h"
 #include "pmsis/data/spi.h"
+#include "pmsis/data/i2c.h"
 
 #endif
 

@@ -19,6 +19,7 @@
 
 #include "implem/data.h"
 #include "pmsis/implem/perf.h"
+#include "pmsis/implem/udma.h"
 #include "pmsis/implem/cpi.h"
 #include "pmsis_implem.h"
 
