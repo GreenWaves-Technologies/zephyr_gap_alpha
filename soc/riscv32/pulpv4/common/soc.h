@@ -116,7 +116,9 @@ void soc_interrupt_init(void);
 #define RISCV_RAM_BASE             CONFIG_DTCM_BASE_ADDRESS
 #define RISCV_RAM_SIZE             CONFIG_DTCM_SIZE
 
-void pulp_soc_eu_register_udma_callback(u32_t event, void (*callback)(), void *arg);
+void pulp_soc_eu_register_udma_callback(u32_t event, void (*callback)(int event, void *), void *arg);
+
+void pulp_soc_eu_register_udma_extra_callback(u32_t event, void (*callback)(int event, void *), void *arg);
 
 int cluster_power_up();
 

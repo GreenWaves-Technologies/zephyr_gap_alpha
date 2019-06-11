@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef __PMSIS_IMPLEM_IMPLEM_H__
-#define __PMSIS_IMPLEM_IMPLEM_H__
+#ifndef __RT_DATA_CPI_H__
+#define __RT_DATA_CPI_H__
 
-#include "pmsis/implem/perf.h"
-#include "pmsis/implem/cpi.h"
-#include "rt/implem/implem.h"
+typedef struct {
+  int channel_id;
+  int open_count;
+  uint32_t base;
+  rt_udma_channel_t channel;
+} rt_cpi_t;
 
 #endif

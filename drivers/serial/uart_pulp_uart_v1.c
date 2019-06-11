@@ -38,8 +38,9 @@ static __attribute__((section(".l2_ram"))) int uart_pulp_console_poll_out;
 	((struct uart_pulp_dev_data_t *)(dev)->driver_data)
 
 
-static void uart_pulp_udma_tx_handler(struct device *dev)
+static void uart_pulp_udma_tx_handler(int event, void *arg)
 {
+	struct device *dev = (struct device *)arg;
 	struct uart_pulp_dev_data_t * const dev_data = DEV_DATA(dev);
 
 	k_sem_give(&dev_data->sync);

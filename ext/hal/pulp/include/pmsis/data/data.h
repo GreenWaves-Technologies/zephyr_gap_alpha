@@ -14,11 +14,34 @@
  * limitations under the License.
  */
 
-#ifndef __PMSIS_IMPLEM_IMPLEM_H__
-#define __PMSIS_IMPLEM_IMPLEM_H__
+#ifndef __PMSIS__DATA__DATA_H__
+#define __PMSIS__DATA__DATA_H__
 
-#include "pmsis/implem/perf.h"
-#include "pmsis/implem/cpi.h"
-#include "rt/implem/implem.h"
+#include <zephyr.h>
+
+struct pi_cluster_task_implem
+{
+  int pending;
+  int core_mask;
+};
+
+struct pi_task_implem
+{
+  int kpoll;
+  struct k_work workitem;
+  struct k_poll_event event;
+  struct k_poll_signal signal;
+  struct pi_task *next;
+  unsigned int data[6];
+};
+
+#define CLUSTER_TASK_IMPLEM struct pi_cluster_task_implem implem
+#define PI_TASK_IMPLEM struct pi_task_implem implem
+#define PMSIS_NO_INLINE_INCLUDE
+
+#include "pmsis/data/udma.h"
+#include "pmsis/data/cpi.h"
+#include "pmsis/data/spi.h"
 
 #endif
+

@@ -7,7 +7,7 @@
 #ifndef __SOC_RISCV32_PULP_COMMON_ALLOC_H__
 #define __SOC_RISCV32_PULP_COMMON_ALLOC_H__
 
-#include <pmsis_decl.h>
+#include <pmsis.h>
 
 typedef struct rt_alloc_block_s {
   int                      size;

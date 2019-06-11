@@ -14,11 +14,24 @@
  * limitations under the License.
  */
 
-#ifndef __PMSIS_IMPLEM_IMPLEM_H__
-#define __PMSIS_IMPLEM_IMPLEM_H__
+#ifndef __RT_DATA_SPIM_H__
+#define __RT_DATA_SPIM_H__
 
-#include "pmsis/implem/perf.h"
-#include "pmsis/implem/cpi.h"
-#include "rt/implem/implem.h"
+#ifndef LANGUAGE_ASSEMBLY
+
+typedef struct {
+  pi_task_t *pending_copy;
+  pi_task_t *waiting_first;
+  pi_task_t *waiting_last;
+  unsigned int udma_cmd[4];
+  int open_count;
+  int id;
+} pi_spim_t;
+
+#endif
+
+#define PI_SPIM_T_PENDING_COPY      0
+#define PI_SPIM_T_WAITING_FIRST     4
+#define PI_SPIM_T_WAITING_LAST      8
 
 #endif

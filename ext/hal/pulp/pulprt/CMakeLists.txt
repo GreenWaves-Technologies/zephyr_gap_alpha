@@ -4,6 +4,7 @@ zephyr_compile_options_ifndef(
   )
 
 zephyr_sources(
+  drivers/spi/spim-v2.c
   drivers/hyper/hyperram-v1.c
   kernel/riscv/pe-eu-v3.S
   kernel/cluster_call.c

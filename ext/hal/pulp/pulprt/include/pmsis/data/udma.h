@@ -14,11 +14,24 @@
  * limitations under the License.
  */
 
-#ifndef __PMSIS_IMPLEM_IMPLEM_H__
-#define __PMSIS_IMPLEM_IMPLEM_H__
+#ifndef __RT_DATA_UDMA_H__
+#define __RT_DATA_UDMA_H__
 
-#include "pmsis/implem/perf.h"
-#include "pmsis/implem/cpi.h"
-#include "rt/implem/implem.h"
+#ifndef LANGUAGE_ASSEMBLY
+
+#include "pmsis_types.h"
+
+typedef struct {
+  pi_task_t *pendings[2];
+  pi_task_t *waitings_first;
+  pi_task_t *waitings_last;
+} rt_udma_channel_t;
+
+#endif
+
+#define RT_UDMA_CHANNEL_T_PENDINGS_0     0
+#define RT_UDMA_CHANNEL_T_PENDINGS_1     4
+#define RT_UDMA_CHANNEL_T_PENDINGS_FIRST 8
+#define RT_UDMA_CHANNEL_T_PENDINGS_LAST  12
 
 #endif

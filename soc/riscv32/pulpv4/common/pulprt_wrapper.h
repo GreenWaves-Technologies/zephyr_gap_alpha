@@ -10,9 +10,18 @@
 #include "soc.h"
 #include "alloc.h"
 
-static inline void __rt_udma_register_channel_callback(int channel, void (*callback)(void *))
+static inline void __rt_udma_register_channel_callback(int channel, void (*callback)(int event, void *), void *arg)
 {
-  pulp_soc_eu_register_udma_callback(channel, callback, NULL);
+  pulp_soc_eu_register_udma_callback(channel, callback, arg);
+}
+
+static inline void __rt_udma_register_extra_callback(unsigned int event, void (*callback)(int event, void *), void *arg)
+{
+  pulp_soc_eu_register_udma_extra_callback(event, callback, arg);
+}
+
+static inline void __rt_udma_channel_reg_data(int channel_id, void *data)
+{
 }
 
 static inline void __rt_task_init(pi_task_t *task)
@@ -53,6 +62,11 @@ static inline int __rt_cluster_lock(rt_fc_cluster_data_t *cluster)
 static inline void __rt_cluster_unlock(rt_fc_cluster_data_t *cluster, int lock)
 {
   k_mutex_unlock(&cluster->mutex);
+}
+
+static inline unsigned int __rt_freq_periph_get()
+{
+  return 50000000;
 }
 
 
