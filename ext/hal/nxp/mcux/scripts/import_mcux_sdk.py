@@ -37,12 +37,13 @@ def get_soc_family(device):
 def get_files(src, pattern):
     matches = []
     nonmatches = []
+    always_exclude = "freertos"
     if os.path.exists(src):
         for filename in os.listdir(src):
             path = os.path.join(src, filename)
             if re.search(pattern, filename):
                 matches.append(path)
-            else:
+            elif not re.search(always_exclude, filename):
                 nonmatches.append(path)
 
     return [matches, nonmatches]
@@ -65,15 +66,16 @@ def import_sdk(directory):
 
         device_src = os.path.join(directory, 'devices', device)
         device_pattern = "|".join([device, 'fsl_device_registers'])
-        [device_headers, ignore] = get_files(device_src, device_pattern)
+        device_headers, _ = get_files(device_src, device_pattern)
 
         drivers_src = os.path.join(directory, 'devices', device, 'drivers')
-        drivers_pattern = "fsl_clock|fsl_iomuxc"
+        drivers_pattern = "fsl_clock|fsl_iomuxc|fsl_power\.|fsl_reset"
+        #pattern fsl_power. has a full stop so other such as powerquad is not copied
         [device_drivers, shared_drivers] = get_files(drivers_src, drivers_pattern)
 
         xip_boot_src = os.path.join(directory, 'devices', device, 'xip')
         xip_boot_pattern = ".*"
-        [xip_boot, ignore] = get_files(xip_boot_src, xip_boot_pattern)
+        xip_boot, _ = get_files(xip_boot_src, xip_boot_pattern)
 
         print('Importing {} device headers to {}'.format(device, device_dst))
         copy_files(device_headers, device_dst)
@@ -93,7 +95,7 @@ def import_sdk(directory):
 
         xip_config_src = os.path.join(board_src, 'xip')
         xip_config_pattern = ".*"
-        [xip_config, ignore] = get_files(xip_config_src, xip_config_pattern)
+        xip_config, _ = get_files(xip_config_src, xip_config_pattern)
 
         print('Importing {} xip config to {}'.format(board, board_dst))
         copy_files(xip_config, board_dst)

@@ -215,7 +215,7 @@ static inline unsigned int eu_irq_mask_get()
   return pulp_read32(ARCHI_EU_DEMUX_ADDR + EU_CORE_MASK_IRQ);
 }
 
-void _arch_irq_enable(unsigned int irq)
+void z_arch_irq_enable(unsigned int irq)
 {
 	unsigned int key;
 
@@ -225,7 +225,7 @@ void _arch_irq_enable(unsigned int irq)
 	irq_unlock(key);
 };
 
-void _arch_irq_disable(unsigned int irq)
+void z_arch_irq_disable(unsigned int irq)
 {
 	unsigned int key;
 
@@ -235,7 +235,7 @@ void _arch_irq_disable(unsigned int irq)
 	irq_unlock(key);
 };
 
-int _arch_irq_is_enabled(unsigned int irq)
+int z_arch_irq_is_enabled(unsigned int irq)
 {
 	return (eu_irq_mask_get() >> irq) & 1;\
 }

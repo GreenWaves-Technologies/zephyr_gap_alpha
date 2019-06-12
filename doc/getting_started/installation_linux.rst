@@ -76,8 +76,8 @@ On Ubuntu:
 
    sudo apt-get install --no-install-recommends git cmake ninja-build gperf \
      ccache dfu-util device-tree-compiler wget \
-     python3-pip python3-setuptools python3-wheel xz-utils file make gcc \
-     gcc-multilib
+     python3-pip python3-setuptools python3-tk python3-wheel xz-utils file \
+     make gcc gcc-multilib
 
 On Fedora:
 
@@ -86,21 +86,21 @@ On Fedora:
 
    sudo dnf group install "Development Tools" "C Development Tools and Libraries"
    dnf install git cmake ninja-build gperf ccache dfu-util dtc wget \
-     python3-pip xz file glibc-devel.i686 libstdc++-devel.i686
+     python3-pip python3-tkinter xz file glibc-devel.i686 libstdc++-devel.i686
 
 On Clear Linux:
 
 .. code-block:: console
 
    sudo swupd bundle-add c-basic dev-utils dfu-util dtc \
-     os-core-dev python-basic python3-basic
+     os-core-dev python-basic python3-basic python3-tcl
 
 On Arch:
 
 .. code-block:: console
 
    sudo pacman -S git cmake ninja gperf ccache dfu-util dtc wget \
-       python-pip python-setuptools python-wheel xz file make
+       python-pip python-setuptools python-wheel tk xz file make
 
 .. important::
    Zephyr requires a recent version of CMake. Read through
@@ -174,9 +174,9 @@ Follow these steps to install the SDK on your Linux host system.
 
    .. code-block:: console
 
-      wget https://github.com/zephyrproject-rtos/meta-zephyr-sdk/releases/download/0.9.5/zephyr-sdk-0.9.5-setup.run
+      wget https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.10.0/zephyr-sdk-0.10.0-setup.run
 
-   (You can change *0.9.5* to another version if needed; the `Zephyr
+   (You can change *0.10.0* to another version if needed; the `Zephyr
    Downloads`_ page contains all available SDK releases.)
 
 #. Run the installation binary:
@@ -184,7 +184,7 @@ Follow these steps to install the SDK on your Linux host system.
    .. code-block:: console
 
       cd <sdk download directory>
-      sh zephyr-sdk-0.9.5-setup.run
+      sh zephyr-sdk-0.10.0-setup.run
 
    .. important::
       If this fails, make sure Zephyr's dependencies were installed

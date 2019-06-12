@@ -6,10 +6,9 @@
 
 
 menuconfig SPI_NOR
-	bool
-	prompt "SPI NOR Flash"
+	bool "SPI NOR Flash"
 	select FLASH_HAS_DRIVER_ENABLED
-	depends on SPI && FLASH
+	depends on SPI
 
 if SPI_NOR
 
@@ -21,11 +20,11 @@ config SPI_NOR_INIT_PRIORITY
 	  Device is connected to SPI bus, it has to
 	  be initialized after SPI driver.
 
-config SPI_NOR_JEDEC_ID
-	hex "Unique Id to identify SPI flash"
+config SPI_NOR_CS_WAIT_DELAY
+	int "Delay time in us"
 	default 0
 	help
-	This is a unique id to identify SPI flash
+	This is the wait delay (in us) to allow for CS switching to take effect
 
 config SPI_NOR_PAGE_SIZE
 	int "Page size of SPI flash"

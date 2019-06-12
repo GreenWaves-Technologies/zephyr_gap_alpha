@@ -41,7 +41,7 @@ def endian_prefix():
     else:
         return "<"
 
-def read_intlist(intlist_path):
+def read_intlist(intlist_path, syms):
     """read a binary file containing the contents of the kernel's .intList
     section. This is an instance of a header created by
     include/linker/intlist.ld:
@@ -71,7 +71,10 @@ def read_intlist(intlist_path):
     prefix = endian_prefix()
 
     intlist_header_fmt = prefix + "II"
-    intlist_entry_fmt = prefix + "iiII"
+    if "CONFIG_64BIT" in syms:
+        intlist_entry_fmt = prefix + "iiQQ"
+    else:
+        intlist_entry_fmt = prefix + "iiII"
 
     with open(intlist_path, "rb") as fp:
         intdata = fp.read()
@@ -220,12 +223,11 @@ def main():
 
                 debug('3rd level offsets: {}'.format(list_3rd_lvl_offsets))
 
-    intlist = read_intlist(args.intlist)
+    intlist = read_intlist(args.intlist, syms)
     nvec = intlist["num_vectors"]
     offset = intlist["offset"]
-    prefix = endian_prefix()
 
-    spurious_handler = "&_irq_spurious"
+    spurious_handler = "&z_irq_spurious"
     sw_irq_handler   = "ISR_WRAPPER"
 
     debug('offset is ' + str(offset))
@@ -250,8 +252,8 @@ def main():
         swt = None
 
     for irq, flags, func, param in intlist["interrupts"]:
-        if (flags & ISR_FLAG_DIRECT):
-            if (param != 0):
+        if flags & ISR_FLAG_DIRECT:
+            if param != 0:
                 error("Direct irq %d declared, but has non-NULL parameter"
                         % irq)
             vt[irq - offset] = func
@@ -263,7 +265,7 @@ def main():
                         % (irq, param))
 
             if not "CONFIG_MULTI_LEVEL_INTERRUPTS" in syms:
-                swt[irq - offset] = (param, func)
+                table_index = irq - offset
             else:
                 # Figure out third level interrupt position
                 debug('IRQ = ' + hex(irq))
@@ -278,28 +280,32 @@ def main():
                     debug('IRQ_level = 3')
                     debug('IRQ_Indx = ' + str(irq3))
                     debug('IRQ_Pos  = ' + str(irq3_pos))
-                    swt[irq3_pos - offset] = (param, func)
+                    table_index = irq3_pos - offset
 
                 # Figure out second level interrupt position
-                if irq2:
+                elif irq2:
                     irq_parent = irq1
                     list_index = getindex(irq_parent, list_2nd_lvl_offsets)
                     irq2_pos = irq2_baseoffset + max_irq_per*list_index + irq2 - 1
                     debug('IRQ_level = 2')
                     debug('IRQ_Indx = ' + str(irq2))
                     debug('IRQ_Pos  = ' + str(irq2_pos))
-                    swt[irq2_pos - offset] = (param, func)
+                    table_index = irq2_pos - offset
 
                 # Figure out first level interrupt position
-                if not irq3 and not irq2:
+                else:
                     debug('IRQ_level = 1')
                     debug('IRQ_Indx = ' + str(irq1))
                     debug('IRQ_Pos  = ' + str(irq1))
-                    swt[irq1 - offset] = (param, func)
+                    table_index = irq1 - offset
+
+            if swt[table_index] != (0, spurious_handler):
+                error("multiple registrations at table_index %d for irq %d (0x%x)" % (table_index, irq, irq))
+
+            swt[table_index] = (param, func)
 
     with open(args.output_source, "w") as fp:
         write_source_file(fp, vt, swt, intlist, syms)
 
 if __name__ == "__main__":
     main()
-

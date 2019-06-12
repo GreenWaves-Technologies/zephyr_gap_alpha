@@ -2,8 +2,8 @@ sample:
   description: BSD Sockets big HTTP download example
   name: big_http_download
 tests:
-  test:
-    platform_exclude: esp32 qemu_x86_64 # No newlib
+  sample.net.sockets.big_http_download:
+    filter: TOOLCHAIN_HAS_NEWLIB == 1
     harness: net
     min_ram: 32
     min_flash: 128

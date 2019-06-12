@@ -98,7 +98,7 @@ static void print_err(out_func_t out, void *ctx)
  *
  * @return N/A
  */
-void _vprintk(out_func_t out, void *ctx, const char *fmt, va_list ap)
+void z_vprintk(out_func_t out, void *ctx, const char *fmt, va_list ap)
 {
 	int might_format = 0; /* 1 if encountered a '%' */
 	enum pad_type padding = PAD_NONE;
@@ -128,7 +128,16 @@ void _vprintk(out_func_t out, void *ctx, const char *fmt, va_list ap)
 					goto still_might_format;
 				}
 				/* Fall through */
-			case '1' ... '9':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+				/* Fall through */
+			case '9':
 				if (min_width < 0) {
 					min_width = *fmt - '0';
 				} else {
@@ -229,8 +238,9 @@ void _vprintk(out_func_t out, void *ctx, const char *fmt, va_list ap)
 				char *s = va_arg(ap, char *);
 				char *start = s;
 
-				while (*s)
+				while (*s) {
 					out((int)(*s++), ctx);
+				}
 
 				if (padding == PAD_SPACE_AFTER) {
 					int remaining = min_width - (s - start);
@@ -307,7 +317,7 @@ void vprintk(const char *fmt, va_list ap)
 	if (_is_user_context()) {
 		struct buf_out_context ctx = { 0 };
 
-		_vprintk(buf_char_out, &ctx, fmt, ap);
+		z_vprintk(buf_char_out, &ctx, fmt, ap);
 
 		if (ctx.buf_count) {
 			buf_flush(&ctx);
@@ -315,7 +325,7 @@ void vprintk(const char *fmt, va_list ap)
 	} else {
 		struct out_context ctx = { 0 };
 
-		_vprintk(char_out, &ctx, fmt, ap);
+		z_vprintk(char_out, &ctx, fmt, ap);
 	}
 }
 #else
@@ -323,11 +333,11 @@ void vprintk(const char *fmt, va_list ap)
 {
 	struct out_context ctx = { 0 };
 
-	_vprintk(char_out, &ctx, fmt, ap);
+	z_vprintk(char_out, &ctx, fmt, ap);
 }
 #endif
 
-void _impl_k_str_out(char *c, size_t n)
+void z_impl_k_str_out(char *c, size_t n)
 {
 	int i;
 
@@ -340,7 +350,7 @@ void _impl_k_str_out(char *c, size_t n)
 Z_SYSCALL_HANDLER(k_str_out, c, n)
 {
 	Z_OOPS(Z_SYSCALL_MEMORY_READ(c, n));
-	_impl_k_str_out((char *)c, n);
+	z_impl_k_str_out((char *)c, n);
 
 	return 0;
 }
@@ -397,10 +407,10 @@ static void _printk_hex_ulong(out_func_t out, void *ctx,
 	int remaining = 16; /* 16 digits max */
 	int digits = 0;
 
-	for (; size; size--) {
+	for (; size != 0; size--) {
 		char nibble = (num >> ((size - 1) << 2) & 0xf);
 
-		if (nibble || found_largest_digit || size == 1) {
+		if (nibble != 0 || found_largest_digit != 0 || size == 1) {
 			found_largest_digit = 1;
 			nibble += nibble > 9 ? 87 : 48;
 			out((int)nibble, ctx);
@@ -450,7 +460,7 @@ static void _printk_dec_ulong(out_func_t out, void *ctx,
 	}
 
 	while (pos >= 9) {
-		if (found_largest_digit || remainder > pos) {
+		if (found_largest_digit != 0 || remainder > pos) {
 			found_largest_digit = 1;
 			out((int)((remainder / (pos + 1)) + 48), ctx);
 			digits++;
@@ -481,7 +491,7 @@ struct str_context {
 
 static int str_out(int c, struct str_context *ctx)
 {
-	if (!ctx->str || ctx->count >= ctx->max) {
+	if (ctx->str == NULL || ctx->count >= ctx->max) {
 		ctx->count++;
 		return c;
 	}
@@ -501,7 +511,7 @@ int snprintk(char *str, size_t size, const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	_vprintk((out_func_t)str_out, &ctx, fmt, ap);
+	z_vprintk((out_func_t)str_out, &ctx, fmt, ap);
 	va_end(ap);
 
 	if (ctx.count < ctx.max) {
@@ -515,7 +525,7 @@ int vsnprintk(char *str, size_t size, const char *fmt, va_list ap)
 {
 	struct str_context ctx = { str, size, 0 };
 
-	_vprintk((out_func_t)str_out, &ctx, fmt, ap);
+	z_vprintk((out_func_t)str_out, &ctx, fmt, ap);
 
 	if (ctx.count < ctx.max) {
 		str[ctx.count] = '\0';

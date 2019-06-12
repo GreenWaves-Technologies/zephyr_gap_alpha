@@ -68,3 +68,11 @@ arduino_serial: &usart6 {};
 &usbotg_fs {
 	status = "ok";
 };
+
+&iwdg {
+	status = "ok";
+};
+
+&adc1 {
+	status = "ok";
+};

@@ -18,6 +18,14 @@
 			device_type = "cpu";
 			compatible = "arm,cortex-m7";
 			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			mpu: mpu@e000ed90 {
+				compatible = "arm,armv7m-mpu";
+				reg = <0xe000ed90 0x40>;
+				arm,num-mpu-regions = <16>;
+			};
 		};
 	};
 
@@ -180,6 +188,14 @@
 			label = "PINMUX_0";
 		};
 
+		lcdif1: display-controller@402b8000 {
+			compatible = "fsl,imx6sx-lcdif";
+			reg = <0x402b8000 0x4000>;
+			interrupts = <42 0>;
+			label = "ELCDIF_1";
+			status = "disabled";
+		};
+
 		spi1: spi@40394000 {
 			compatible = "nxp,imx-lpspi";
 			reg = <0x40394000 0x4000>;
@@ -300,7 +316,7 @@
 			compatible = "nxp,kinetis-ethernet";
 			reg = <0x402D8000 0x628>;
 			interrupts = <114 0>;
-			interrupts-names = "COMMON";
+			interrupt-names = "COMMON";
 			status = "disabled";
 			local-mac-address = [00 00 00 00 00 00];
 			label = "ETH_0";
@@ -308,7 +324,7 @@
 				compatible = "nxp,kinetis-ptp";
 				status = "disabled";
 				interrupts = <115 0>;
-				interrupts-names = "IEEE1588_TMR";
+				interrupt-names = "IEEE1588_TMR";
 			};
 		};
 
@@ -318,6 +334,28 @@
 			status = "ok";
 			interrupts = <53 0>;
 			label = "TRNG";
+		};
+
+		usbd1: usbd@402e0000 {
+			compatible = "nxp,kinetis-usbd";
+			reg = <0x402E0000 0x200>;
+			interrupts = <113 1>;
+			interrupt-names = "usb_otg";
+			num-bidir-endpoints = <8>;
+			maximum-speed = "full-speed";
+			status = "disabled";
+			label = "USBD_1";
+		};
+
+		usbd2: usbd@402e0200 {
+			compatible = "nxp,kinetis-usbd";
+			reg = <0x402E0200 0x200>;
+			interrupts = <112 1>;
+			interrupt-names = "usb_otg";
+			num-bidir-endpoints = <8>;
+			maximum-speed = "full-speed";
+			status = "disabled";
+			label = "USBD_2";
 		};
 	};
 };

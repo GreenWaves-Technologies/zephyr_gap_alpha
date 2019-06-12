@@ -16,12 +16,13 @@
 #include <kernel.h>
 #include <init.h>
 #include <nrfx.h>
+#include <nrf_power.h>
 #include <soc/nrfx_coredep.h>
 #include <logging/log.h>
 
 #ifdef CONFIG_RUNTIME_NMI
-extern void _NmiInit(void);
-#define NMI_INIT() _NmiInit()
+extern void z_NmiInit(void);
+#define NMI_INIT() z_NmiInit()
 #else
 #define NMI_INIT()
 #endif
@@ -30,6 +31,14 @@ extern void _NmiInit(void);
 #define LOG_LEVEL CONFIG_SOC_LOG_LEVEL
 LOG_MODULE_REGISTER(soc);
 
+/* Overrides the weak ARM implementation:
+   Set general purpose retention register and reboot */
+void sys_arch_reboot(int type)
+{
+	nrf_power_gpregret_set((uint8_t)type);
+	NVIC_SystemReset();
+}
+
 static int nordicsemi_nrf51_init(struct device *arg)
 {
 	u32_t key;
@@ -37,8 +46,6 @@ static int nordicsemi_nrf51_init(struct device *arg)
 	ARG_UNUSED(arg);
 
 	key = irq_lock();
-
-	SystemInit();
 
 	/* Install default handler that simply resets the CPU
 	 * if configured in the kernel, NOP otherwise
@@ -60,6 +67,11 @@ void z_arch_busy_wait(u32_t time_us)
 
 	time_us -= DELAY_CALL_OVERHEAD_US;
 	nrfx_coredep_delay_us(time_us);
+}
+
+void z_platform_init(void)
+{
+	SystemInit();
 }
 
 SYS_INIT(nordicsemi_nrf51_init, PRE_KERNEL_1, 0);

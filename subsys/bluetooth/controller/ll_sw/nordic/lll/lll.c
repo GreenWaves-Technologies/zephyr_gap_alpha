@@ -40,16 +40,16 @@ static struct {
 	struct device *clk_hf;
 } lll;
 
-static int _init_reset(void);
+static int init_reset(void);
 static int prepare(lll_is_abort_cb_t is_abort_cb, lll_abort_cb_t abort_cb,
 		   lll_prepare_cb_t prepare_cb, int prio,
 		   struct lll_prepare_param *prepare_param, u8_t is_resume);
 static int resume_enqueue(lll_prepare_cb_t resume_cb, int resume_prio);
 
 #if !defined(CONFIG_BT_CTLR_LOW_LAT)
-static void _preempt_ticker_cb(u32_t ticks_at_expire, u32_t remainder,
-			       u16_t lazy, void *param);
-static void _preempt(void *param);
+static void preempt_ticker_cb(u32_t ticks_at_expire, u32_t remainder,
+			      u16_t lazy, void *param);
+static void preempt(void *param);
 #else /* CONFIG_BT_CTLR_LOW_LAT */
 #if (CONFIG_BT_CTLR_LLL_PRIO == CONFIG_BT_CTLR_ULL_LOW_PRIO)
 static void ticker_op_job_disable(u32_t status, void *op_context);
@@ -111,7 +111,7 @@ int lll_init(void)
 	event.curr.abort_cb = NULL;
 
 	/* Initialize LF CLK */
-	clk_k32 = device_get_binding(CONFIG_CLOCK_CONTROL_NRF_K32SRC_DRV_NAME);
+	clk_k32 = device_get_binding(DT_NORDIC_NRF_CLOCK_0_LABEL "_32K");
 	if (!clk_k32) {
 		return -ENODEV;
 	}
@@ -120,12 +120,12 @@ int lll_init(void)
 
 	/* Initialize HF CLK */
 	lll.clk_hf =
-		device_get_binding(CONFIG_CLOCK_CONTROL_NRF_M16SRC_DRV_NAME);
+		device_get_binding(DT_NORDIC_NRF_CLOCK_0_LABEL "_16M");
 	if (!lll.clk_hf) {
 		return -ENODEV;
 	}
 
-	err = _init_reset();
+	err = init_reset();
 	if (err) {
 		return err;
 	}
@@ -153,7 +153,7 @@ int lll_reset(void)
 {
 	int err;
 
-	err = _init_reset();
+	err = init_reset();
 	if (err) {
 		return err;
 	}
@@ -221,7 +221,7 @@ void lll_disable(void *param)
 int lll_prepare_done(void *param)
 {
 #if defined(CONFIG_BT_CTLR_LOW_LAT) && \
-	(CONFIG_BT_CTLR_LLL_PRIO == CONFIG_BT_CTLR_ULL_LOW_PRIO)
+	    (CONFIG_BT_CTLR_LLL_PRIO == CONFIG_BT_CTLR_ULL_LOW_PRIO)
 	u32_t ret;
 
 	/* Ticker Job Silence */
@@ -229,8 +229,8 @@ int lll_prepare_done(void *param)
 				  TICKER_USER_ID_LLL,
 				  ticker_op_job_disable, NULL);
 
-	return ((ret == TICKER_STATUS_SUCCESS) || (ret == TICKER_STATUS_BUSY)) ?
-	       0 : -EFAULT;
+	return ((ret == TICKER_STATUS_SUCCESS) ||
+		(ret == TICKER_STATUS_BUSY)) ? 0 : -EFAULT;
 #else
 	return 0;
 #endif /* CONFIG_BT_CTLR_LOW_LAT */
@@ -258,10 +258,12 @@ int lll_done(void *param)
 			ull = HDR_ULL(((struct lll_hdr *)param)->parent);
 		}
 
-#if defined(CONFIG_BT_CTLR_LOW_LAT) && \
-	(CONFIG_BT_CTLR_LLL_PRIO == CONFIG_BT_CTLR_ULL_LOW_PRIO)
-		mayfly_enable(TICKER_USER_ID_LLL, TICKER_USER_ID_ULL_LOW, 1);
-#endif /* CONFIG_BT_CTLR_LOW_LAT */
+		if (IS_ENABLED(CONFIG_BT_CTLR_LOW_LAT) &&
+		    (CONFIG_BT_CTLR_LLL_PRIO == CONFIG_BT_CTLR_ULL_LOW_PRIO)) {
+			mayfly_enable(TICKER_USER_ID_LLL,
+				      TICKER_USER_ID_ULL_LOW,
+				      1);
+		}
 
 		DEBUG_RADIO_CLOSE(0);
 	} else {
@@ -326,11 +328,11 @@ u32_t lll_evt_offset_get(struct evt_hdr *evt)
 	if (0) {
 #if defined(CONFIG_BT_CTLR_XTAL_ADVANCED)
 	} else if (evt->ticks_xtal_to_start & XON_BITMASK) {
-		return max(evt->ticks_active_to_start,
+		return MAX(evt->ticks_active_to_start,
 			   evt->ticks_preempt_to_start);
 #endif /* CONFIG_BT_CTLR_XTAL_ADVANCED */
 	} else {
-		return max(evt->ticks_active_to_start,
+		return MAX(evt->ticks_active_to_start,
 			   evt->ticks_xtal_to_start);
 	}
 }
@@ -342,7 +344,44 @@ u32_t lll_preempt_calc(struct evt_hdr *evt, u8_t ticker_id,
 	return 0;
 }
 
-static int _init_reset(void)
+
+void lll_chan_set(u32_t chan)
+{
+	switch (chan) {
+	case 37:
+		radio_freq_chan_set(2);
+		break;
+
+	case 38:
+		radio_freq_chan_set(26);
+		break;
+
+	case 39:
+		radio_freq_chan_set(80);
+		break;
+
+	default:
+		if (chan < 11) {
+			radio_freq_chan_set(4 + (chan * 2U));
+		} else if (chan < 40) {
+			radio_freq_chan_set(28 + ((chan - 11) * 2U));
+		} else {
+			LL_ASSERT(0);
+		}
+		break;
+	}
+
+	radio_whiten_iv_set(chan);
+}
+
+
+u32_t lll_radio_is_idle(void)
+{
+	return radio_is_idle();
+}
+
+
+static int init_reset(void)
 {
 	return 0;
 }
@@ -371,12 +410,10 @@ static int prepare(lll_is_abort_cb_t is_abort_cb, lll_abort_cb_t abort_cb,
 #endif /* CONFIG_BT_CTLR_LOW_LAT */
 		int ret;
 
-#if defined(CONFIG_BT_CTLR_LOW_LAT)
-		/* early abort */
-		if (event.curr.param) {
+		if (IS_ENABLED(CONFIG_BT_CTLR_LOW_LAT) && event.curr.param) {
+			/* early abort */
 			event.curr.abort_cb(NULL, event.curr.param);
 		}
-#endif /* CONFIG_BT_CTLR_LOW_LAT */
 
 		/* Store the next prepare for deferred call */
 		ret = ull_prepare_enqueue(is_abort_cb, abort_cb, prepare_param,
@@ -391,7 +428,7 @@ static int prepare(lll_is_abort_cb_t is_abort_cb, lll_abort_cb_t abort_cb,
 		/* Calc the preempt timeout */
 		evt = HDR_LLL2EVT(prepare_param->param);
 		preempt_anchor = prepare_param->ticks_at_expire;
-		preempt_to = max(evt->ticks_active_to_start,
+		preempt_to = MAX(evt->ticks_active_to_start,
 				 evt->ticks_xtal_to_start) -
 				 evt->ticks_preempt_to_start;
 
@@ -405,7 +442,7 @@ static int prepare(lll_is_abort_cb_t is_abort_cb, lll_abort_cb_t abort_cb,
 				   TICKER_NULL_REMAINDER,
 				   TICKER_NULL_LAZY,
 				   TICKER_NULL_SLOT,
-				   _preempt_ticker_cb, NULL,
+				   preempt_ticker_cb, NULL,
 				   NULL, NULL);
 		LL_ASSERT((ret == TICKER_STATUS_SUCCESS) ||
 			  (ret == TICKER_STATUS_FAILURE) ||
@@ -465,19 +502,19 @@ static int resume_enqueue(lll_prepare_cb_t resume_cb, int resume_prio)
 }
 
 #if !defined(CONFIG_BT_CTLR_LOW_LAT)
-static void _preempt_ticker_cb(u32_t ticks_at_expire, u32_t remainder,
+static void preempt_ticker_cb(u32_t ticks_at_expire, u32_t remainder,
 			       u16_t lazy, void *param)
 {
-	static memq_link_t _link;
-	static struct mayfly _mfy = {0, 0, &_link, NULL, _preempt};
+	static memq_link_t link;
+	static struct mayfly mfy = {0, 0, &link, NULL, preempt};
 	u32_t ret;
 
 	ret = mayfly_enqueue(TICKER_USER_ID_ULL_HIGH, TICKER_USER_ID_LLL,
-			     0, &_mfy);
+			     0, &mfy);
 	LL_ASSERT(!ret);
 }
 
-static void _preempt(void *param)
+static void preempt(void *param)
 {
 	struct lll_event *next = ull_prepare_dequeue_get();
 	lll_prepare_cb_t resume_cb;

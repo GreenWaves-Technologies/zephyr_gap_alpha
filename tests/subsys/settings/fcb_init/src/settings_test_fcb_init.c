@@ -15,12 +15,13 @@
 
 static u32_t val32;
 
-static int c1_set(int argc, char **argv, void *value_ctx)
+static int c1_set(int argc, char **argv, size_t len, settings_read_cb read_cb,
+		  void *cb_arg)
 {
 	int rc;
 
-	if (argc == 1 && !strcmp(argv[0], "val32"))	 {
-		rc = settings_val_read_cb(value_ctx, &val32, sizeof(val32));
+	if (argc == 1 && !strcmp(argv[0], "val32")) {
+		rc = read_cb(cb_arg, &val32, sizeof(val32));
 		zassert_true(rc >= 0, "SETTINGS_VALUE_SET callback");
 		return 0;
 	}
@@ -28,8 +29,8 @@ static int c1_set(int argc, char **argv, void *value_ctx)
 	return -ENOENT;
 }
 
-static int c1_export(int (*export_func)(const char *name, void *value,
-					size_t val_len))
+static int c1_export(int (*export_func)(const char *name,
+					const void *value, size_t val_len))
 {
 	(void)export_func("hello/val32", &val32, sizeof(val32));
 

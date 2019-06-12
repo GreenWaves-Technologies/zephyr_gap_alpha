@@ -37,7 +37,7 @@
 #define PIN_OUT 4  /* DIO4 */
 #define PIN_IN 2  /* DIO2 */
 #elif defined(CONFIG_BOARD_ARDUINO_ZERO)
-#define DEV_NAME DT_GPIO_SAM0_PORTA_LABEL
+#define DEV_NAME DT_ATMEL_SAM0_GPIO_PORT_A_LABEL
 #define PIN_OUT 20  /* PA20 / pin 6 */
 #define PIN_IN 15  /* PA15 / pin 5 */
 #elif defined(CONFIG_BOARD_NRF52840_PCA10056)
@@ -61,6 +61,7 @@ struct drv_data {
 	struct gpio_callback gpio_cb;
 	int mode;
 	int index;
+	int aux;
 };
 
 void test_gpio_pin_read_write(void);
@@ -69,6 +70,7 @@ void test_gpio_callback_edge_low(void);
 void test_gpio_callback_level_high(void);
 void test_gpio_callback_level_low(void);
 void test_gpio_callback_add_remove(void);
+void test_gpio_callback_self_remove(void);
 void test_gpio_callback_enable_disable(void);
 
 #endif /* __TEST_GPIO_H__ */

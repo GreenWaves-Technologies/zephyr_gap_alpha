@@ -18,7 +18,7 @@ struct sample_data {
 #define MESSAGE2        123456
 #define TIMEOUT_TICKS   50
 #define Q_LEN           5
-#define STACKSZ         512
+#define STACKSZ         CONFIG_CMSIS_V2_THREAD_MAX_STACK_SIZE
 
 osMessageQueueId_t message_id;
 
@@ -136,10 +136,10 @@ void message_recv(void)
 
 static K_THREAD_STACK_DEFINE(test_stack, STACKSZ);
 osThreadAttr_t thread_attr = {
-	.name       = "send_thread",
-	.stack_mem  = &test_stack,
+	.name = "send_thread",
+	.stack_mem = &test_stack,
 	.stack_size = STACKSZ,
-	.priority   = osPriorityNormal,
+	.priority = osPriorityNormal,
 };
 
 static char __aligned(4) sample_mem[sizeof(struct sample_data) * Q_LEN];

@@ -35,7 +35,7 @@ static inline void handle_sb(I2C_TypeDef *i2c, struct i2c_stm32_data *data)
 		slave = (((saddr & 0x0300) >> 7) & 0xFF);
 		u8_t header = slave | HEADER;
 
-		if (data->current.is_restart == 0) {
+		if (data->current.is_restart == 0U) {
 			data->current.is_restart = 1U;
 		} else {
 			header |= I2C_REQUEST_READ;
@@ -65,10 +65,10 @@ static inline void handle_addr(I2C_TypeDef *i2c, struct i2c_stm32_data *data)
 		}
 	}
 	if (!data->current.is_write) {
-		if (data->current.len == 1) {
+		if (data->current.len == 1U) {
 			/* Single byte reception: enable NACK and clear POS */
 			LL_I2C_AcknowledgeNextData(i2c, LL_I2C_NACK);
-		} else if (data->current.len == 2) {
+		} else if (data->current.len == 2U) {
 			/* 2-byte reception: enable NACK and set POS */
 			LL_I2C_AcknowledgeNextData(i2c, LL_I2C_NACK);
 			LL_I2C_EnableBitPOS(i2c);
@@ -81,7 +81,7 @@ static inline void handle_txe(I2C_TypeDef *i2c, struct i2c_stm32_data *data)
 {
 	if (data->current.len) {
 		data->current.len--;
-		if (data->current.len == 0) {
+		if (data->current.len == 0U) {
 			/*
 			 * This is the last byte to transmit disable Buffer
 			 * interrupt and wait for a BTF interrupt
@@ -317,7 +317,6 @@ s32_t stm32_i2c_msg_write(struct device *dev, struct i2c_msg *msg,
 	if (msg->flags & I2C_MSG_RESTART) {
 		LL_I2C_GenerateStartCondition(i2c);
 		while (!LL_I2C_IsActiveFlag_SB(i2c)) {
-			;
 		}
 
 		if (I2C_ADDR_10_BITS & data->dev_config) {
@@ -326,8 +325,8 @@ s32_t stm32_i2c_msg_write(struct device *dev, struct i2c_msg *msg,
 
 			LL_I2C_TransmitData8(i2c, header);
 			while (!LL_I2C_IsActiveFlag_ADD10(i2c)) {
-				;
 			}
+
 			slave = data->slave_address & 0xFF;
 			LL_I2C_TransmitData8(i2c, slave);
 		} else {
@@ -366,7 +365,6 @@ s32_t stm32_i2c_msg_write(struct device *dev, struct i2c_msg *msg,
 	}
 
 	while (!LL_I2C_IsActiveFlag_BTF(i2c)) {
-		;
 	}
 
 	if (msg->flags & I2C_MSG_STOP) {
@@ -392,7 +390,6 @@ s32_t stm32_i2c_msg_read(struct device *dev, struct i2c_msg *msg,
 	if (msg->flags & I2C_MSG_RESTART) {
 		LL_I2C_GenerateStartCondition(i2c);
 		while (!LL_I2C_IsActiveFlag_SB(i2c)) {
-			;
 		}
 
 		if (I2C_ADDR_10_BITS & data->dev_config) {
@@ -401,18 +398,18 @@ s32_t stm32_i2c_msg_read(struct device *dev, struct i2c_msg *msg,
 
 			LL_I2C_TransmitData8(i2c, header);
 			while (!LL_I2C_IsActiveFlag_ADD10(i2c)) {
-				;
 			}
+
 			slave = saddr & 0xFF;
 			LL_I2C_TransmitData8(i2c, slave);
 			while (!LL_I2C_IsActiveFlag_ADDR(i2c)) {
-				;
 			}
+
 			LL_I2C_ClearFlag_ADDR(i2c);
 			LL_I2C_GenerateStartCondition(i2c);
 			while (!LL_I2C_IsActiveFlag_SB(i2c)) {
-				;
 			}
+
 			header |= I2C_REQUEST_READ;
 			LL_I2C_TransmitData8(i2c, header);
 		} else {
@@ -431,10 +428,10 @@ s32_t stm32_i2c_msg_read(struct device *dev, struct i2c_msg *msg,
 			}
 		}
 
-		if (len == 1) {
+		if (len == 1U) {
 			/* Single byte reception: enable NACK and set STOP */
 			LL_I2C_AcknowledgeNextData(i2c, LL_I2C_NACK);
-		} else if (len == 2) {
+		} else if (len == 2U) {
 			/* 2-byte reception: enable NACK and set POS */
 			LL_I2C_AcknowledgeNextData(i2c, LL_I2C_NACK);
 			LL_I2C_EnableBitPOS(i2c);
@@ -458,8 +455,8 @@ s32_t stm32_i2c_msg_read(struct device *dev, struct i2c_msg *msg,
 			break;
 		case 2:
 			while (!LL_I2C_IsActiveFlag_BTF(i2c)) {
-				;
 			}
+
 			/*
 			 * Stop condition must be generated before reading the
 			 * last two bytes.
@@ -477,8 +474,8 @@ s32_t stm32_i2c_msg_read(struct device *dev, struct i2c_msg *msg,
 			break;
 		case 3:
 			while (!LL_I2C_IsActiveFlag_BTF(i2c)) {
-				;
 			}
+
 			/* Set NACK before reading N-2 byte*/
 			LL_I2C_AcknowledgeNextData(i2c, LL_I2C_NACK);
 			/* Fall through */

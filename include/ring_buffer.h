@@ -71,10 +71,10 @@ struct ring_buf {
  * @param pow Ring buffer size exponent.
  */
 #define RING_BUF_ITEM_DECLARE_POW2(name, pow) \
-	static u32_t _ring_buffer_data_##name[1 << (pow)]; \
+	static u32_t _ring_buffer_data_##name[BIT(pow)]; \
 	struct ring_buf name = { \
-		.size = (1 << (pow)), \
-		.mask = (1 << (pow)) - 1, \
+		.size = (BIT(pow)),	  \
+		.mask = (BIT(pow)) - 1, \
 		.buf = { .buf32 = _ring_buffer_data_##name } \
 	}
 
@@ -148,11 +148,11 @@ static inline void ring_buf_init(struct ring_buf *buf, u32_t size, void *data)
 {
 	memset(buf, 0, sizeof(struct ring_buf));
 	buf->size = size;
-	buf->buf.buf32 = data;
+	buf->buf.buf32 = (u32_t *)data;
 	if (is_power_of_two(size)) {
 		buf->mask = size - 1;
 	} else {
-		buf->mask = 0;
+		buf->mask = 0U;
 	}
 }
 
@@ -195,6 +195,19 @@ static inline int ring_buf_is_empty(struct ring_buf *buf)
 {
 	return (buf->head == buf->tail);
 }
+
+/**
+ * @brief Reset ring buffer state.
+ *
+ * @param buf Address of ring buffer.
+ */
+static inline void ring_buf_reset(struct ring_buf *buf)
+{
+	buf->head = 0;
+	buf->tail = 0;
+	memset(&buf->misc, 0, sizeof(buf->misc));
+}
+
 /** @deprecated Renamed to ring_buf_is_empty. */
 __deprecated static inline int sys_ring_buf_is_empty(struct ring_buf *buf)
 {
@@ -211,6 +224,19 @@ __deprecated static inline int sys_ring_buf_is_empty(struct ring_buf *buf)
 static inline int ring_buf_space_get(struct ring_buf *buf)
 {
 	return z_ring_buf_custom_space_get(buf->size, buf->head, buf->tail);
+}
+
+/**
+ * @brief Return ring buffer capacity.
+ *
+ * @param buf Address of ring buffer.
+ *
+ * @return Ring buffer capacity (in 32-bit words or bytes).
+ */
+static inline int ring_buf_capacity_get(struct ring_buf *buf)
+{
+	/* One element is used to distinguish between empty and full state. */
+	return buf->size - 1;
 }
 
 /** @deprecated Renamed to ring_buf_space_get. */

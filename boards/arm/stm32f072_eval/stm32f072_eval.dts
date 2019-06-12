@@ -82,3 +82,7 @@
 	pinctrl-names = "default";
 	status = "ok";
 };
+
+&iwdg {
+	status = "ok";
+};

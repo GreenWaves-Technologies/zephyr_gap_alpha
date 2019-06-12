@@ -1,10 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
 
 config BOARD_NATIVE_POSIX
 	bool "Native POSIX"
 	depends on SOC_POSIX
+	select HAS_DTS
 	select NATIVE_POSIX_TIMER
 	select NATIVE_POSIX_CONSOLE
-	select HAS_COVERAGE_SUPPORT
 	help
 	  Will produce a console Linux process which can be executed natively.
 	  It provides some minimal needed models:

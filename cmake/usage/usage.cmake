@@ -1,43 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+if(NOT DEFINED ENV{ZEPHYR_BASE})
+  message(FATAL_ERROR "ZEPHYR_BASE not set")
+endif()
+
+include ($ENV{ZEPHYR_BASE}/cmake/boards.cmake)
+
 # TODO: Set to make when make is used as a generator
 set(CMAKE_MAKE_PROGRAM ninja)
 get_filename_component(generator ${CMAKE_MAKE_PROGRAM} NAME)
 
-set(arch_list
-  arc
-  arm
-  nios2
-  riscv32
-  posix
-  x86
-  xtensa
-  )
-
 string(REPLACE " " ";" BOARD_ROOT "${BOARD_ROOT_SPACE_SEPARATED}")
 string(REPLACE " " ";" SHIELD_LIST "${SHIELD_LIST_SPACE_SEPARATED}")
-
-foreach(arch ${arch_list})
-  foreach(root ${BOARD_ROOT})
-    set(board_arch_dir ${root}/boards/${arch})
-
-    # Match the .yaml files in the board directories to make sure we are
-    # finding boards, e.g. qemu_xtensa/qemu_xtensa.yaml
-    file(GLOB_RECURSE yamls_for_${arch}
-      RELATIVE ${board_arch_dir}
-      ${board_arch_dir}/*.yaml
-      )
-
-    # The above gives a list like
-    # nrf51_blenano/nrf51_blenano_yaml;nrf51_pca10028/nrf51_pca10028_yaml
-    # we construct a list of board names by removing both the .yaml
-    # suffix and the path.
-    set(boards_for_${arch} "")
-    foreach(yaml_path ${yamls_for_${arch}})
-      get_filename_component(board ${yaml_path} NAME_WE)
-
-      list(APPEND boards_for_${arch} ${board})
-    endforeach()
-  endforeach()
-endforeach()
 
 message("Cleaning targets:")
 message("  clean     - Remove most generated files but keep configuration and backup files")
@@ -69,12 +42,7 @@ message("  $ export BOARD=<BOARD NAME>")
 message("  $ export SHIELD=<SHIELD NAME> #optional")
 message("  $ cmake -Bpath/to/build_dir -Hpath/to/source_dir")
 message("")
-foreach(arch ${arch_list})
-  message(" ${arch}:")
-  foreach(board ${boards_for_${arch}})
-    message("   ${board}")
-  endforeach()
-endforeach()
+dump_all_boards("" "  ")
 message("")
 message("Supported Shields:")
 message("")

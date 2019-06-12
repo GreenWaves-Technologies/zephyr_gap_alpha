@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <arch/nios2/asm.h>
 #include <kernel_structs.h>
 #include <offsets_short.h>
 
@@ -15,7 +14,7 @@ GTEXT(_exception)
 GTEXT(_Fault)
 GTEXT(__swap)
 #ifdef CONFIG_IRQ_OFFLOAD
-GTEXT(_irq_do_offload)
+GTEXT(z_irq_do_offload)
 GTEXT(_offload_routine)
 #endif
 

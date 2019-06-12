@@ -5,8 +5,10 @@
  */
 
 #include <ztest.h>
+#include "test_sched.h"
 
-#define STACK_SIZE (384 + CONFIG_TEST_EXTRA_STACKSIZE)
+#ifdef CONFIG_TIMESLICING
+
 /* nrf 51 has lower ram, so creating less number of threads */
 #if CONFIG_SRAM_SIZE <= 24
 	#define NUM_THREAD 2
@@ -18,7 +20,7 @@
 #endif
 #define BASE_PRIORITY 0
 #define ITRERATION_COUNT 5
-static K_THREAD_STACK_ARRAY_DEFINE(tstack, NUM_THREAD, STACK_SIZE);
+BUILD_ASSERT(NUM_THREAD <= MAX_NUM_THREAD);
 /* slice size in millisecond*/
 #define SLICE_SIZE 200
 /* busy for more than one slice*/
@@ -37,8 +39,8 @@ static void thread_tslice(void *p1, void *p2, void *p3)
 	int thread_parameter = ((int)p1 == (NUM_THREAD - 1)) ? '\n' :
 			       ((int)p1 + 'A');
 
-	s64_t expected_slice_min = __ticks_to_ms(_ms_to_ticks(SLICE_SIZE));
-	s64_t expected_slice_max = __ticks_to_ms(_ms_to_ticks(SLICE_SIZE) + 1);
+	s64_t expected_slice_min = __ticks_to_ms(z_ms_to_ticks(SLICE_SIZE));
+	s64_t expected_slice_max = __ticks_to_ms(z_ms_to_ticks(SLICE_SIZE) + 1);
 
 	while (1) {
 		s64_t tdelta = k_uptime_delta(&elapsed_slice);
@@ -55,10 +57,9 @@ static void thread_tslice(void *p1, void *p2, void *p3)
 		 * even though, when timeslice used up the next thread
 		 * should be scheduled in.
 		 */
-		k_busy_wait(1000 * BUSY_MS);
+		spin_for_ms(BUSY_MS);
 		k_sem_give(&sema1);
 	}
-
 }
 
 /*test cases*/
@@ -87,7 +88,7 @@ void test_slice_scheduling(void)
 
 	/* create threads with equal preemptive priority*/
 	for (int i = 0; i < NUM_THREAD; i++) {
-		tid[i] = k_thread_create(&t[i], tstack[i], STACK_SIZE,
+		tid[i] = k_thread_create(&t[i], tstacks[i], STACK_SIZE,
 					 thread_tslice, (void *)(intptr_t) i, NULL, NULL,
 					 K_PRIO_PREEMPT(BASE_PRIORITY), 0, 0);
 	}
@@ -102,7 +103,7 @@ void test_slice_scheduling(void)
 		 * even though, when timeslice used up the next thread
 		 * should be scheduled in.
 		 */
-		k_busy_wait(1000 * BUSY_MS);
+		spin_for_ms(BUSY_MS);
 
 		/* relinquish CPU and wait for each thread to complete*/
 		for (int i = 0; i < NUM_THREAD; i++) {
@@ -122,3 +123,10 @@ void test_slice_scheduling(void)
 
 	k_thread_priority_set(k_current_get(), old_prio);
 }
+
+#else /* CONFIG_TIMESLICING */
+void test_slice_scheduling(void)
+{
+	ztest_test_skip();
+}
+#endif /* CONFIG_TIMESLICING */

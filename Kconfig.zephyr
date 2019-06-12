@@ -7,6 +7,13 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
+menu "Modules"
+
+source "$(CMAKE_BINARY_DIR)/Kconfig.modules"
+source "modules/Kconfig"
+
+endmenu
+
 # Include these first so that any properties (e.g. defaults) below can be
 # overriden in *.defconfig files (by defining symbols in multiple locations).
 # After merging all the symbol definitions, Kconfig picks the first property
@@ -38,7 +45,6 @@ source "subsys/Kconfig"
 
 source "ext/Kconfig"
 
-source "tests/Kconfig"
 
 menu "Build and Link Features"
 
@@ -82,9 +88,15 @@ config HAS_FLASH_LOAD_OFFSET
 	  This option is selected by targets having a FLASH_LOAD_OFFSET
 	  and FLASH_LOAD_SIZE.
 
-if !HAS_DTS
+config USE_CODE_PARTITION
+	bool "link into code-partition"
+	depends on HAS_FLASH_LOAD_OFFSET
+	help
+	  When selected application will be linked into chosen code-partition.
+
 config FLASH_LOAD_OFFSET
 	hex "Kernel load offset"
+	default $(dt_hex_val,DT_CODE_PARTITION_OFFSET) if USE_CODE_PARTITION
 	default 0
 	depends on HAS_FLASH_LOAD_OFFSET
 	help
@@ -97,6 +109,7 @@ config FLASH_LOAD_OFFSET
 
 config FLASH_LOAD_SIZE
 	hex "Kernel load size"
+	default $(dt_hex_val,DT_CODE_PARTITION_SIZE) if USE_CODE_PARTITION
 	default 0
 	depends on HAS_FLASH_LOAD_OFFSET
 	help
@@ -106,10 +119,10 @@ config FLASH_LOAD_SIZE
 	  the device.
 
 	  If unsure, leave at the default value 0.
-endif
 
 config TEXT_SECTION_OFFSET
-	hex "TEXT section offset"
+	hex
+	prompt "TEXT section offset" if !BOOTLOADER_MCUBOOT
 	default 0x200 if BOOTLOADER_MCUBOOT
 	default 0
 	help
@@ -143,20 +156,23 @@ config CUSTOM_LINKER_SCRIPT
 	  Zephyr.
 
 config CUSTOM_RODATA_LD
-	bool "Include custom-rodata.ld"
+	bool "(DEPRECATED) Include custom-rodata.ld"
 	help
+	  Note: This is deprecated, use Cmake function zephyr_linker_sources() instead.
 	  Include a customized linker script fragment for inserting additional
 	  data and linker directives into the rodata section.
 
 config CUSTOM_RWDATA_LD
-	bool "Include custom-rwdata.ld"
+	bool "(DEPRECATED) Include custom-rwdata.ld"
 	help
+	  Note: This is deprecated, use Cmake function zephyr_linker_sources() instead.
 	  Include a customized linker script fragment for inserting additional
 	  data and linker directives into the data section.
 
 config CUSTOM_SECTIONS_LD
-	bool "Include custom-sections.ld"
+	bool "(DEPRECATED) Include custom-sections.ld"
 	help
+	  Note: This is deprecated, use Cmake function zephyr_linker_sources() instead.
 	  Include a customized linker script fragment for inserting additional
 	  arbitrary sections.
 
@@ -178,6 +194,14 @@ config CHECK_LINK_MAP
 	help
 	  Run a linker address generation validity checker at the end of the
 	  build.
+
+config LINKER_SORT_BY_ALIGNMENT
+	bool "Sort input sections by alignment"
+	default y
+	help
+	  This turns on the linker flag to sort sections by alignment
+	  in decreasing size of symbols. This helps to minimize
+	  padding between symbols.
 
 endmenu
 
@@ -340,6 +364,7 @@ config BOOTLOADER_SRAM_SIZE
 
 config BOOTLOADER_MCUBOOT
 	bool "MCUboot bootloader support"
+	select USE_CODE_PARTITION
 	help
 	  This option signifies that the target uses MCUboot as a bootloader,
 	  or in other words that the image is to be chain-loaded by MCUboot.
@@ -376,19 +401,10 @@ config BOOTLOADER_KEXEC
 	  This option signifies that Linux boots the kernel using kexec system call
 	  and utility. This method is used to boot the kernel over the network.
 
-config BOOTLOADER_UNKNOWN
-	bool "Generic boot loader support"
-	depends on X86
-	help
-	  This option signifies that the target has a generic bootloader
-	  or that it supports multiple ways of booting and it isn't clear
-	  at build time which method is to be used. When this option is enabled
-	  the board may have to do extra work to ensure a proper startup.
-
 config BOOTLOADER_CONTEXT_RESTORE
 	bool "Boot loader has context restore support"
 	default y
-	depends on SYS_POWER_DEEP_SLEEP && BOOTLOADER_CONTEXT_RESTORE_SUPPORTED
+	depends on SYS_POWER_DEEP_SLEEP_STATES && BOOTLOADER_CONTEXT_RESTORE_SUPPORTED
 	help
 	  This option signifies that the target has a bootloader
 	  that restores CPU context upon resuming from deep sleep
@@ -401,4 +417,13 @@ config REBOOT
 	  Enable the sys_reboot() API. Enabling this can drag in other subsystems
 	  needed to perform a "safe" reboot (e.g. SYSTEM_CLOCK_DISABLE, to stop the
 	  system clock before issuing a reset).
+
+config MISRA_SANE
+	bool "MISRA standards compliance features"
+	help
+	  Causes the source code to build in "MISRA" mode, which
+	  disallows some otherwise-permitted features of the C
+	  standard for safety reasons.  Specifically variable length
+	  arrays are not permitted (and gcc will enforce this).
+
 endmenu

@@ -1,6 +1,11 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 #include "skeleton.dtsi"
 #include <dt-bindings/i2c/i2c.h>
 #include <dt-bindings/gpio/gpio.h>
+#include <mem.h>
+
+#define IRQ_DW(x) ((x) << 16 | (7) << 8 | (6))
 
 / {
 	cpus {
@@ -31,7 +36,13 @@
 	sram0: memory@be000000 {
 		device_type = "memory";
 		compatible = "mmio-sram";
-		reg = <0xbe000000 0x400000>;
+		reg = <0xbe000000 DT_SIZE_M(4)>;
+	};
+
+	sram1: memory@be800000 {
+		device_type = "memory";
+		compatible = "mmio-sram";
+		reg = <0xbe800000 DT_SIZE_K(64)>;
 	};
 
 	soc {
@@ -90,16 +101,16 @@
 			reg = <0x00080c00 0x400>;
 			bits = <32>;
 			label = "GPIO";
-			interrupts = <4 1 0>;
+			interrupts = <IRQ_DW(4) 1 0>;
 			interrupt-parent = <&dw_intc>;
 
 			gpio-controller;
 			#gpio-cells = <2>;
 		};
 
-		pinmux: pinmux@81C30 {
+		pinmux: pinmux@81c30 {
 			compatible = "intel,s1000-pinmux";
-			reg = <0x00081C30 0xC>;
+			reg = <0x00081c30 0xC>;
 		};
 
 		uart0: uart@80800 {
@@ -107,7 +118,7 @@
 			reg = <0x80800 0x400>;
 			label = "UART_0";
 			clock-frequency = <38400000>;
-			interrupts = <3 0 0>;
+			interrupts = <IRQ_DW(3) 0 0>;
 			interrupt-parent = <&dw_intc>;
 
 
@@ -120,7 +131,7 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 			reg = <0x80400 0x400>;
-			interrupts = <2 0 0>;
+			interrupts = <IRQ_DW(2) 0 0>;
 			interrupt-parent = <&dw_intc>;
 			label = "I2C_0";
 
@@ -132,7 +143,7 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 			reg = <0x0000E000 0x400>;
-			interrupts = <7 0 0>;
+			interrupts = <IRQ_DW(7) 0 0>;
 			interrupt-parent = <&dw_intc>;
 			label = "SPI_0";
 		};

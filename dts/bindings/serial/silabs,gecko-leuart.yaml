@@ -10,26 +10,26 @@ inherits:
 
 properties:
     compatible:
-      type: string
-      category: required
-      description: compatible strings
       constraint: "silabs,gecko-leuart"
 
     reg:
-      type: array
-      description: mmio register space
-      generation: define
       category: required
 
     interrupts:
+      category: required
+
+    # Note: Not all SoC series support setting individual pin location. If this
+    # is a case all location-* properties need to have identical value.
+
+    location-rx:
       type: array
       category: required
-      description: required interrupts
+      description: RX pin configuration defined as <location port pin>
       generation: define
 
-    location:
-      type: int
+    location-tx:
+      type: array
       category: required
-      description: PIN location
+      description: TX pin configuration defined as <location port pin>
       generation: define
 ...

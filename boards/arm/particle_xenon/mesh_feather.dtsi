@@ -18,7 +18,6 @@
 		led3 = &status_blue;
 		sw0 = &mode_button;
 		sw1 = &reset_button;
-		flash1 = &gd25q32c;
 	};
 
 	chosen {
@@ -27,6 +26,7 @@
 		zephyr,shell-uart = &uart0;
 		zephyr,sram = &sram0;
 		zephyr,flash = &flash0;
+		zephyr,code-partition = &slot0_partition;
 	};
 
 	leds {
@@ -80,20 +80,26 @@
 		};
 		slot0_partition: partition@c000 {
 			label = "image-0";
-			reg = <0x0000C000 0x000069000>;
+			reg = <0x0000C000 0x000067000>;
 		};
-		slot1_partition: partition@75000 {
+		slot1_partition: partition@73000 {
 			label = "image-1";
-			reg = <0x00075000 0x000069000>;
+			reg = <0x00073000 0x000067000>;
 		};
-		scratch_partition: partition@de000 {
+		scratch_partition: partition@da000 {
 			label = "image-scratch";
-			reg = <0x000de000 0x0001e000>;
+			reg = <0x000da000 0x0001e000>;
 		};
 
-		storage_partition: partition@fc000 {
+		/*
+		 * The flash starting at 0x000f8000 and ending at
+		 * 0x000fffff is reserved for use by the application.
+		 */
+
+		/* Storage partition will be used by FCB/NFFS/NVS if enabled. */
+		storage_partition: partition@f8000 {
 			label = "storage";
-			reg = <0x000fc000 0x00004000>;
+			reg = <0x000f8000 0x00008000>;
 		};
 	};
 };
@@ -124,12 +130,15 @@
 	sck-pin = <19>;
 	mosi-pin = <20>;
 	miso-pin = <21>;
-	gd25q32c: gd25q32c@11 {
-		compatible = "spi,flash";
+	cs-gpios = <&gpio0 17 0>;
+	gd25q32c@0 {
+		compatible = "jedec,spi-nor";
 		label = "GD25Q32C";
-		reg = <17>;
-		size = <4096>;
+		reg = <0>;
 		spi-max-frequency = <80000000>;
+		wp-gpios = <&gpio0 22 0>;
+		hold-gpios = <&gpio0 23 0>;
+		jedec-id = <0xc2 0x20 0x16>;
 	};
 };
 

@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <arch/nios2/asm.h>
 #include <kernel_structs.h>
 
 /* exports */
@@ -140,6 +139,6 @@ SECTION_FUNC(TEXT, __start)
 	 */
 
 	/* Jump into C domain. _PrepC zeroes BSS, copies rw data into RAM,
-	 * and then enters _Cstart */
+	 * and then enters z_cstart */
 	call _PrepC
 

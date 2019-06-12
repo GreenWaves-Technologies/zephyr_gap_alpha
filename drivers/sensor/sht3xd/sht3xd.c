@@ -90,20 +90,8 @@ static int sht3xd_sample_fetch(struct device *dev, enum sensor_channel chan)
 		SHT3XD_CMD_FETCH & 0xFF
 	};
 
-	struct i2c_msg msgs[2] = {
-		{
-			.buf = tx_buf,
-			.len = sizeof(tx_buf),
-			.flags = I2C_MSG_WRITE | I2C_MSG_RESTART,
-		},
-		{
-			.buf = rx_buf,
-			.len = sizeof(rx_buf),
-			.flags = I2C_MSG_READ | I2C_MSG_STOP,
-		},
-	};
-
-	if (i2c_transfer(i2c, msgs, 2, address) < 0) {
+	if (i2c_write_read(i2c, address, tx_buf, sizeof(tx_buf),
+			   rx_buf, sizeof(rx_buf)) < 0) {
 		LOG_DBG("Failed to read data sample!");
 		return -EIO;
 	}
@@ -139,15 +127,15 @@ static int sht3xd_channel_get(struct device *dev,
 	 */
 	if (chan == SENSOR_CHAN_AMBIENT_TEMP) {
 		/* val = -45 + 175 * sample / (2^16 -1) */
-		tmp = 175 * (u64_t)data->t_sample;
+		tmp = (u64_t)data->t_sample * 175U;
 		val->val1 = (s32_t)(tmp / 0xFFFF) - 45;
-		val->val2 = (1000000 * (tmp % 0xFFFF)) / 0xFFFF;
+		val->val2 = ((tmp % 0xFFFF) * 1000000U) / 0xFFFF;
 	} else if (chan == SENSOR_CHAN_HUMIDITY) {
 		/* val = 100 * sample / (2^16 -1) */
-		u32_t tmp2 = 100 * (u32_t)data->rh_sample;
+		u32_t tmp2 = (u32_t)data->rh_sample * 100U;
 		val->val1 = tmp2 / 0xFFFF;
 		/* x * 100000 / 65536 == x * 15625 / 1024 */
-		val->val2 = (tmp2 % 0xFFFF) * 15625 / 1024;
+		val->val2 = (tmp2 % 0xFFFF) * 15625U / 1024;
 	} else {
 		return -ENOTSUP;
 	}

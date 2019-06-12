@@ -125,6 +125,9 @@ config USE_STM32_HAL_I2S
 config USE_STM32_HAL_I2S_EX
 	bool
 
+config USE_STM32_HAL_IPCC
+	bool
+
 config USE_STM32_HAL_IRDA
 	bool
 
@@ -209,10 +212,10 @@ config USE_STM32_HAL_SAI_EX
 config USE_STM32_HAL_SD
 	bool
 
-config USE_STM32_HAL_SDADC
+config USE_STM32_HAL_SD_EX
 	bool
 
-config USE_STM32_HAL_SD_EX
+config USE_STM32_HAL_SDADC
 	bool
 
 config USE_STM32_HAL_SDRAM
@@ -243,9 +246,6 @@ config USE_STM32_HAL_SWPMI
 	bool
 
 config USE_STM32_HAL_TIM
-	bool
-
-config USE_STM32_HAL_TIME_EX
 	bool
 
 config USE_STM32_HAL_TIM_EX
@@ -308,6 +308,9 @@ config USE_STM32_LL_HRTIM
 config USE_STM32_LL_I2C
 	bool
 
+config USE_STM32_LL_IPCC
+	bool
+
 config USE_STM32_LL_LPTIM
 	bool
 
@@ -351,4 +354,3 @@ config USE_STM32_LL_UTILS
 	bool
 
 endif
-

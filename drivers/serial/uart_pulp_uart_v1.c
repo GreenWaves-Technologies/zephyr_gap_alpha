@@ -112,7 +112,7 @@ static const struct uart_pulp_device_config uart_pulp_dev_cfg = {
 
 static struct uart_pulp_dev_data_t uart_pulp_dev_data = {
 	.itf = 0,
-	.sync = _K_SEM_INITIALIZER(uart_pulp_dev_data.sync, 0, 1),
+	.sync = Z_SEM_INITIALIZER(uart_pulp_dev_data.sync, 0, 1),
 	.mutex = _K_MUTEX_INITIALIZER(uart_pulp_dev_data.mutex)
 };
 

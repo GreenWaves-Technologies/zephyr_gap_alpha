@@ -6,15 +6,15 @@
 
 struct bt_settings_handler {
 	const char *name;
-	int (*set)(int argc, char **argv, void *value_ctx);
+	int (*set)(int argc, char **argv, size_t len, settings_read_cb read_cb,
+		   void *cb_arg);
 	int (*commit)(void);
-	int (*export)(int (*func)(const char *name, void *val,
-				  size_t val_len));
+	int (*export)(int (*func)(const char *name,
+				  const void *val, size_t val_len));
 };
 
 #define BT_SETTINGS_DEFINE(_name, _set, _commit, _export)               \
-	const struct bt_settings_handler _name __aligned(4)             \
-			__in_section(_bt_settings, static, _name) = {   \
+	const Z_STRUCT_SECTION_ITERABLE(bt_settings_handler, _name) = { \
 				.name = STRINGIFY(_name),               \
 				.set = _set,                            \
 				.commit = _commit,                      \

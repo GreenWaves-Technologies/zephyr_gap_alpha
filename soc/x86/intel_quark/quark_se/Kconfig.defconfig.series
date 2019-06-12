@@ -12,6 +12,9 @@ config SOC_SERIES
 config X86_IAMCU
 	default y
 
+config X86_MULTIBOOT
+	default n
+
 config X86_NO_MELTDOWN
 	default y
 
@@ -25,7 +28,7 @@ config LOAPIC_TIMER_IRQ
 	default 64 if LOAPIC_TIMER
 
 config QMSI
-	default y
+	def_bool y
 
 if PWM
 config PWM_QMSI
@@ -145,7 +148,7 @@ config WDT_QMSI
 	default y
 endif # WATCHDOG
 
-if RTC
+if COUNTER
 config RTC_QMSI
 	default y
 endif # RTC

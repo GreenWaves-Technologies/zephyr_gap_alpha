@@ -24,6 +24,40 @@
 static L2_DATA pi_i2c_t __rt_i2c[ARCHI_UDMA_NB_I2C];
 
 
+#ifndef __RT_I2C_COPY_ASM
+
+void __rt_i2c_handle_tx_copy()
+{
+  printf("%s %d\n", __FILE__, __LINE__);
+}
+
+void __rt_i2c_handle_rx_copy()
+{
+  printf("%s %d\n", __FILE__, __LINE__);
+}
+
+void __rt_i2c_step1()
+{
+  printf("%s %d\n", __FILE__, __LINE__);
+}
+
+void __rt_i2c_step2()
+{
+  printf("%s %d\n", __FILE__, __LINE__);
+}
+
+void __rt_i2c_step3()
+{
+  printf("%s %d\n", __FILE__, __LINE__);
+}
+
+void udma_event_handler_end()
+{
+  printf("%s %d\n", __FILE__, __LINE__);
+}
+
+#else
+
 void __rt_i2c_handle_tx_copy();
 void __rt_i2c_handle_rx_copy();
 extern void __rt_i2c_step1();
@@ -31,12 +65,13 @@ extern void __rt_i2c_step2();
 extern void __rt_i2c_step3();
 extern void udma_event_handler_end();
 
+#endif
 
 static int __rt_i2c_get_div(int i2c_freq)
 {
-    // Round-up the divider to obtain an SPI frequency which is below the maximum
+    // Round-up the divider to obtain an i2c frequency which is below the maximum
   int div = (__rt_freq_periph_get() + i2c_freq - 1)/i2c_freq;
-    // The SPIM always divide by 2 once we activate the divider, thus increase by 1
+    // The i2cM always divide by 2 once we activate the divider, thus increase by 1
     // in case it is even to not go avove the max frequency.
   if (div & 1) div += 1;
   div >>= 1;
@@ -181,9 +216,11 @@ void pi_i2c_read_async(struct pi_device *device, uint8_t *rx_buff, int length, p
 
 void pi_i2c_read(struct pi_device *device, uint8_t *data, int length, pi_i2c_xfer_flags_e flags)
 {
+  printf("%s %d\n", __FILE__, __LINE__);
   struct pi_task task;
   pi_i2c_read_async(device, data, length, flags, pi_task(&task));
   pi_wait_on_task(&task);
+  printf("%s %d\n", __FILE__, __LINE__);
 }
 
 int pi_i2c_open(struct pi_device *device)
@@ -264,3 +301,36 @@ static void __attribute__((constructor)) __rt_i2c_init()
   }
 }
 
+
+#ifdef __ZEPHYR__
+
+#include <zephyr.h>
+#include <device.h>
+#include <init.h>
+
+static int i2c_init(struct device *device)
+{
+  ARG_UNUSED(device);
+
+  __rt_i2c_init();
+
+  return 0;
+}
+
+struct i2c_config {
+};
+
+struct i2c_data {
+};
+
+static const struct i2c_config i2c_cfg = {
+};
+
+static struct i2c_data i2c_data = {
+};
+
+DEVICE_INIT(i2c, "i2c", &i2c_init,
+    &i2c_data, &i2c_cfg,
+    PRE_KERNEL_2, CONFIG_KERNEL_INIT_PRIORITY_DEVICE);
+
+#endif

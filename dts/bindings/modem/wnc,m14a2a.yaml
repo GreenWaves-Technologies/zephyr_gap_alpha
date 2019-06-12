@@ -15,10 +15,10 @@ inherits:
 
 properties:
     compatible:
-      type: string
-      category: required
       constraint: "wnc,m14a2a"
-      generation: define
+
+    label:
+      category: required
 
     mdm-boot-mode-sel-gpios:
       type: compound

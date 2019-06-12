@@ -12,6 +12,9 @@ config SOC_SERIES
 config X86_IAMCU
         default y
 
+config X86_MULTIBOOT
+	default n
+
 config SYS_CLOCK_HW_CYCLES_PER_SEC
 	default 32000000
 
@@ -28,7 +31,7 @@ config LOAPIC_TIMER_IRQ_PRIORITY
 	default 2
 
 config QMSI
-	default y
+	def_bool y
 
 if PINMUX
 config PINMUX_QMSI
@@ -53,7 +56,7 @@ config WDT_QMSI
 	default y
 endif # WATCHDOG
 
-if RTC
+if COUNTER
 config RTC_QMSI
 	default y
 

@@ -13,6 +13,7 @@ config	POSIX_MAX_FDS
 	  files, sockets, special devices, etc.
 
 config POSIX_API
+	depends on !ARCH_POSIX
 	bool "POSIX APIs"
 	help
 	  Enable mostly-standards-compliant implementations of
@@ -29,11 +30,11 @@ config PTHREAD_IPC
 
 if PTHREAD_IPC
 config MAX_PTHREAD_COUNT
-	int "Maximum pthread count in POSIX application"
+	int "Maximum simultaneously active pthread count in POSIX application"
 	default 5
 	range 0 255
 	help
-	  Mention maximum number of threads in POSIX compliant application.
+	  Maximum number of simultaneously active threads in a POSIX application.
 
 config SEM_VALUE_MAX
 	int "Maximum semaphore limit"

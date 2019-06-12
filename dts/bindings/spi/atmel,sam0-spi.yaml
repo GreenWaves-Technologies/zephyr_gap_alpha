@@ -18,9 +18,6 @@ properties:
       constraint: "atmel,sam0-spi"
 
     reg:
-      type: array
-      description: mmio register space
-      generation: define
       category: required
 
     dipo:
@@ -33,5 +30,17 @@ properties:
       type: int
       category: required
       description: Data Out Pinout
+      generation: define
+
+    rxdma:
+      type: int
+      category: optional
+      description: Receive DMA channel
+      generation: define
+
+    txdma:
+      type: int
+      category: optional
+      description: Transmit DMA channel
       generation: define
 ...

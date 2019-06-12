@@ -223,8 +223,9 @@ static void eswifi_scan(struct eswifi_dev *eswifi)
 			eswifi->scan_cb(eswifi->iface, 0, &res);
 			k_yield();
 
-			while (data[i] && data[i] != '\n')
+			while (data[i] && data[i] != '\n') {
 				i++;
+			}
 		}
 	}
 
@@ -456,7 +457,7 @@ static int __eswifi_sta_config(struct eswifi_dev *eswifi,
 	}
 
 	if (params->channel == WIFI_CHANNEL_ANY) {
-		eswifi->sta.channel = 0;
+		eswifi->sta.channel = 0U;
 	} else {
 		eswifi->sta.channel = params->channel;
 	}

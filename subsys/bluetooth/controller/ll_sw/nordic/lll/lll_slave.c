@@ -173,7 +173,7 @@ static int prepare_cb(struct lll_prepare_param *prepare_param)
 
 	radio_isr_set(lll_conn_isr_rx, lll);
 
-	radio_tmr_tifs_set(TIFS_US);
+	radio_tmr_tifs_set(EVENT_IFS_US);
 
 #if defined(CONFIG_BT_CTLR_PHY)
 	radio_switch_complete_and_tx(lll->phy_rx, 0, lll->phy_tx,
@@ -214,7 +214,7 @@ static int prepare_cb(struct lll_prepare_param *prepare_param)
 
 #if defined(CONFIG_BT_CTLR_PHY)
 	radio_gpio_pa_lna_enable(remainder_us +
-				 radio_rx_ready_delay_get(conn->phy_rx, 1) -
+				 radio_rx_ready_delay_get(lll->phy_rx, 1) -
 				 CONFIG_BT_CTLR_GPIO_LNA_OFFSET);
 #else /* !CONFIG_BT_CTLR_PHY */
 	radio_gpio_pa_lna_enable(remainder_us +

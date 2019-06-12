@@ -86,17 +86,19 @@ static void eswifi_off_read_work(struct k_work *work)
 
 	LOG_ERR("payload sz = %d", len);
 
-	pkt = net_pkt_get_reserve_rx(K_NO_WAIT);
+	pkt = net_pkt_rx_alloc_with_buffer(eswifi->iface, len,
+					   AF_UNSPEC, 0, K_NO_WAIT);
 	if (!pkt) {
 		LOG_ERR("Cannot allocate rx packet");
 		goto done;
 	}
 
-	if (!net_pkt_append_all(pkt, len, data, K_NO_WAIT)) {
+	if (!net_pkt_write(pkt, data, len)) {
 		LOG_WRN("Incomplete buffer copy");
 	}
 
-	socket->recv_cb(socket->context, pkt, 0, socket->user_data);
+	socket->recv_cb(socket->context, pkt,
+			NULL, NULL, 0, socket->user_data);
 	k_sem_give(&socket->read_sem);
 	k_yield();
 
@@ -309,7 +311,6 @@ static int __eswifi_off_send_pkt(struct eswifi_dev *eswifi,
 				 struct eswifi_off_socket *socket)
 {
 	struct net_pkt *pkt = socket->tx_pkt;
-	struct net_buf *frag;
 	unsigned int bytes;
 	int err, offset;
 
@@ -328,10 +329,11 @@ static int __eswifi_off_send_pkt(struct eswifi_dev *eswifi,
 	offset = strlen(eswifi->buf);
 
 	/* copy payload */
-	for (frag = pkt->frags; frag; frag = frag->frags) {
-		memcpy(&eswifi->buf[offset], frag->data, frag->len);
-		offset += frag->len;
+	if (net_pkt_read(pkt, &eswifi->buf[offset], bytes)) {
+		return -ENOBUFS;
 	}
+
+	offset += bytes;
 
 	err = eswifi_request(eswifi, eswifi->buf, offset + 1,
 			     eswifi->buf, sizeof(eswifi->buf));
@@ -351,7 +353,7 @@ static void eswifi_off_send_work(struct k_work *work)
 	net_context_send_cb_t cb;
 	struct net_context *context;
 	struct eswifi_dev *eswifi;
-	void *user_data, *token;
+	void *user_data;
 	int err;
 
 	socket = CONTAINER_OF(work, struct eswifi_off_socket, connect_work);
@@ -360,7 +362,6 @@ static void eswifi_off_send_work(struct k_work *work)
 	eswifi_lock(eswifi);
 
 	user_data = socket->user_data;
-	token = socket->tx_token;
 	cb = socket->send_cb;
 	context = socket->context;
 
@@ -370,14 +371,13 @@ static void eswifi_off_send_work(struct k_work *work)
 	eswifi_unlock(eswifi);
 
 	if (cb) {
-		cb(context, err, token, user_data);
+		cb(context, err, user_data);
 	}
 }
 
 static int eswifi_off_send(struct net_pkt *pkt,
 			   net_context_send_cb_t cb,
 			   s32_t timeout,
-			   void *token,
 			   void *user_data)
 {
 	struct eswifi_off_socket *socket = pkt->context->offload_context;
@@ -400,7 +400,6 @@ static int eswifi_off_send(struct net_pkt *pkt,
 	socket->tx_pkt = pkt;
 
 	if (timeout == K_NO_WAIT) {
-		socket->tx_token = token;
 		socket->user_data = user_data;
 		socket->send_cb = cb;
 
@@ -417,7 +416,7 @@ static int eswifi_off_send(struct net_pkt *pkt,
 	eswifi_unlock(eswifi);
 
 	if (cb) {
-		cb(socket->context, err, token, user_data);
+		cb(socket->context, err, user_data);
 	}
 
 	return err;
@@ -428,7 +427,6 @@ static int eswifi_off_sendto(struct net_pkt *pkt,
 			     socklen_t addrlen,
 			     net_context_send_cb_t cb,
 			     s32_t timeout,
-			     void *token,
 			     void *user_data)
 {
 	/* TODO */
@@ -454,8 +452,9 @@ static int eswifi_off_recv(struct net_context *context,
 	k_sem_reset(&socket->read_sem);
 	eswifi_unlock(eswifi);
 
-	if (timeout == K_NO_WAIT)
+	if (timeout == K_NO_WAIT) {
 		return 0;
+	}
 
 	err = k_sem_take(&socket->read_sem, timeout);
 

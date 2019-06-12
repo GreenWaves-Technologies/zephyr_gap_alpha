@@ -114,17 +114,44 @@ enum sensor_channel {
 	SENSOR_CHAN_CO2,
 	/** VOC level, in parts per billion (ppb) **/
 	SENSOR_CHAN_VOC,
+	/** Gas sensor resistance in ohms. */
+	SENSOR_CHAN_GAS_RES,
 
 	/** Voltage, in volts **/
 	SENSOR_CHAN_VOLTAGE,
 	/** Current, in amps **/
 	SENSOR_CHAN_CURRENT,
+	/** Resistance , in Ohm **/
+	SENSOR_CHAN_RESISTANCE,
 
 	/** Angular rotation, in degrees */
 	SENSOR_CHAN_ROTATION,
 
+	/** Position change on the X axis, in points. */
+	SENSOR_CHAN_POS_DX,
+	/** Position change on the Y axis, in points. */
+	SENSOR_CHAN_POS_DY,
+	/** Position change on the Z axis, in points. */
+	SENSOR_CHAN_POS_DZ,
+
 	/** All channels. */
 	SENSOR_CHAN_ALL,
+
+	/**
+	 * Number of all common sensor channels.
+	 */
+	SENSOR_CHAN_COMMON_COUNT,
+
+	/**
+	 * This and higher values are sensor specific.
+	 * Refer to the sensor header file.
+	 */
+	SENSOR_CHAN_PRIV_START = SENSOR_CHAN_COMMON_COUNT,
+
+	/**
+	 * Maximum value describing a sensor channel type.
+	 */
+	SENSOR_CHAN_MAX = INT16_MAX,
 };
 
 /**
@@ -162,6 +189,22 @@ enum sensor_trigger_type {
 
 	/** Trigger fires when a double tap is detected. */
 	SENSOR_TRIG_DOUBLE_TAP,
+
+	/**
+	 * Number of all common sensor triggers.
+	 */
+	SENSOR_TRIG_COMMON_COUNT,
+
+	/**
+	 * This and higher values are sensor specific.
+	 * Refer to the sensor header file.
+	 */
+	SENSOR_TRIG_PRIV_START = SENSOR_TRIG_COMMON_COUNT,
+
+	/**
+	 * Maximum value describing a sensor trigger type.
+	 */
+	SENSOR_TRIG_MAX = INT16_MAX,
 };
 
 /**
@@ -208,6 +251,22 @@ enum sensor_attribute {
 	 * algorithms to calibrate itself on a certain axis, or all of them.
 	 */
 	SENSOR_ATTR_CALIB_TARGET,
+
+	/**
+	 * Number of all common sensor attributes.
+	 */
+	SENSOR_ATTR_COMMON_COUNT,
+
+	/**
+	 * This and higher values are sensor specific.
+	 * Refer to the sensor header file.
+	 */
+	SENSOR_ATTR_PRIV_START = SENSOR_ATTR_COMMON_COUNT,
+
+	/**
+	 * Maximum value describing a sensor attribute type.
+	 */
+	SENSOR_ATTR_MAX = INT16_MAX,
 };
 
 /**
@@ -281,14 +340,14 @@ __syscall int sensor_attr_set(struct device *dev,
 			      enum sensor_attribute attr,
 			      const struct sensor_value *val);
 
-static inline int _impl_sensor_attr_set(struct device *dev,
+static inline int z_impl_sensor_attr_set(struct device *dev,
 					enum sensor_channel chan,
 					enum sensor_attribute attr,
 					const struct sensor_value *val)
 {
 	const struct sensor_driver_api *api = dev->driver_api;
 
-	if (!api->attr_set) {
+	if (api->attr_set == NULL) {
 		return -ENOTSUP;
 	}
 
@@ -318,7 +377,7 @@ static inline int sensor_trigger_set(struct device *dev,
 {
 	const struct sensor_driver_api *api = dev->driver_api;
 
-	if (!api->trigger_set) {
+	if (api->trigger_set == NULL) {
 		return -ENOTSUP;
 	}
 
@@ -343,7 +402,7 @@ static inline int sensor_trigger_set(struct device *dev,
  */
 __syscall int sensor_sample_fetch(struct device *dev);
 
-static inline int _impl_sensor_sample_fetch(struct device *dev)
+static inline int z_impl_sensor_sample_fetch(struct device *dev)
 {
 	const struct sensor_driver_api *api = dev->driver_api;
 
@@ -372,7 +431,7 @@ static inline int _impl_sensor_sample_fetch(struct device *dev)
 __syscall int sensor_sample_fetch_chan(struct device *dev,
 				       enum sensor_channel type);
 
-static inline int _impl_sensor_sample_fetch_chan(struct device *dev,
+static inline int z_impl_sensor_sample_fetch_chan(struct device *dev,
 						 enum sensor_channel type)
 {
 	const struct sensor_driver_api *api = dev->driver_api;
@@ -405,7 +464,7 @@ __syscall int sensor_channel_get(struct device *dev,
 				 enum sensor_channel chan,
 				 struct sensor_value *val);
 
-static inline int _impl_sensor_channel_get(struct device *dev,
+static inline int z_impl_sensor_channel_get(struct device *dev,
 					   enum sensor_channel chan,
 					   struct sensor_value *val)
 {

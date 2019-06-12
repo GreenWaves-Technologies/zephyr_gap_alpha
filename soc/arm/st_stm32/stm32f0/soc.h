@@ -28,6 +28,10 @@
  */
 #include <kernel_includes.h>
 
+#ifdef CONFIG_EXTI_STM32
+#include <stm32f0xx_ll_exti.h>
+#endif
+
 #ifdef CONFIG_SERIAL_HAS_DRIVER
 #include <stm32f0xx_ll_usart.h>
 #endif
@@ -53,6 +57,10 @@
 
 #ifdef CONFIG_GPIO_STM32
 #include <stm32f0xx_ll_gpio.h>
+#endif
+
+#ifdef CONFIG_ADC_STM32
+#include <stm32f0xx_ll_adc.h>
 #endif
 
 #endif /* !_ASMLANGUAGE */

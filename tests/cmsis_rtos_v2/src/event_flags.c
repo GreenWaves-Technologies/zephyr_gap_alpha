@@ -16,7 +16,7 @@
 #define FLAG2           (0x00000004)
 #define FLAG            (FLAG1 | FLAG2)
 #define ISR_FLAG        0x50
-#define STACKSZ         512
+#define STACKSZ         CONFIG_CMSIS_V2_THREAD_MAX_STACK_SIZE
 
 osEventFlagsId_t evt_id;
 
@@ -45,18 +45,18 @@ static void thread2(void *arg)
 
 static K_THREAD_STACK_DEFINE(test_stack1, STACKSZ);
 static osThreadAttr_t thread1_attr = {
-	.name       = "Thread1",
-	.stack_mem  = &test_stack1,
+	.name = "Thread1",
+	.stack_mem = &test_stack1,
 	.stack_size = STACKSZ,
-	.priority   = osPriorityHigh,
+	.priority = osPriorityHigh,
 };
 
 static K_THREAD_STACK_DEFINE(test_stack2, STACKSZ);
 static osThreadAttr_t thread2_attr = {
-	.name       = "Thread2",
-	.stack_mem  = &test_stack2,
+	.name = "Thread2",
+	.stack_mem = &test_stack2,
 	.stack_size = STACKSZ,
-	.priority   = osPriorityHigh,
+	.priority = osPriorityHigh,
 };
 
 static osEventFlagsAttr_t event_flags_attrs = {
@@ -104,7 +104,7 @@ void test_event_flags_no_wait_timeout(void)
 	zassert_equal(flags & FLAG1, FLAG1, "");
 
 	flags = osEventFlagsGet(dummy_id);
-	zassert_true(flags == 0,
+	zassert_true(flags == 0U,
 		     "Invalid event Flags ID is unexpectedly working!");
 	/* Clear the Flag explicitly */
 	flags = osEventFlagsClear(evt_id, FLAG1);
@@ -183,10 +183,10 @@ void test_event_from_isr(void *event_id)
 
 static K_THREAD_STACK_DEFINE(test_stack3, STACKSZ);
 static osThreadAttr_t thread3_attr = {
-	.name       = "Thread3",
-	.stack_mem  = &test_stack3,
+	.name = "Thread3",
+	.stack_mem = &test_stack3,
 	.stack_size = STACKSZ,
-	.priority   = osPriorityHigh,
+	.priority = osPriorityHigh,
 };
 
 void test_event_flags_isr(void)

@@ -12,9 +12,10 @@
 #define __RISCV32_SIFIVE_FREEDOM_SOC_H_
 
 #include <soc_common.h>
+#include <generated_dts_board.h>
 
 /* PINMUX Configuration */
-#define SIFIVE_PINMUX_0_BASE_ADDR     (DT_SIFIVE_GPIO_0_BASE_ADDR + 0x38)
+#define SIFIVE_PINMUX_0_BASE_ADDR     (DT_SIFIVE_GPIO0_0_BASE_ADDRESS + 0x38)
 
 /* PINMUX IO Hardware Functions */
 #define SIFIVE_PINMUX_IOF0            0x00
@@ -40,7 +41,7 @@
 #define SIFIVE_BACKUP_REG_BASE	     0x10000080
 
 /* lib-c hooks required RAM defined variables */
-#define RISCV_RAM_BASE               CONFIG_RISCV_RAM_BASE_ADDR
-#define RISCV_RAM_SIZE               CONFIG_RISCV_RAM_SIZE
+#define RISCV_RAM_BASE               DT_SRAM_BASE_ADDRESS
+#define RISCV_RAM_SIZE               KB(DT_SRAM_SIZE)
 
 #endif /* __RISCV32_SIFIVE_FREEDOM_SOC_H_ */

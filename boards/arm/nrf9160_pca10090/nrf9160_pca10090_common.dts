@@ -12,24 +12,25 @@
 	chosen {
 		zephyr,console = &uart0;
 		zephyr,shell-uart = &uart0;
+		zephyr,uart-mcumgr = &uart0;
 	};
 
 	leds {
 		compatible = "gpio-leds";
 		led0: led_0 {
-			gpios = <&gpio0 2 GPIO_INT_ACTIVE_LOW>;
+			gpios = <&gpio0 2 GPIO_INT_ACTIVE_HIGH>;
 			label = "Green LED 0";
 		};
 		led1: led_1 {
-			gpios = <&gpio0 3 GPIO_INT_ACTIVE_LOW>;
+			gpios = <&gpio0 3 GPIO_INT_ACTIVE_HIGH>;
 			label = "Green LED 1";
 		};
 		led2: led_2 {
-			gpios = <&gpio0 4 GPIO_INT_ACTIVE_LOW>;
+			gpios = <&gpio0 4 GPIO_INT_ACTIVE_HIGH>;
 			label = "Green LED 2";
 		};
 		led3: led_3 {
-			gpios = <&gpio0 5 GPIO_INT_ACTIVE_LOW>;
+			gpios = <&gpio0 5 GPIO_INT_ACTIVE_HIGH>;
 			label = "Green LED 3";
 		};
 	};
@@ -103,6 +104,11 @@
 	scl-pin = <31>;
 };
 
+&pwm0 {
+	status = "ok";
+	ch0-pin = <2>;
+};
+
 &spi3 {
 	status = "ok";
 	sck-pin = <19>;
@@ -114,6 +120,10 @@
 	status = "ok";
 };
 
+&timer1 {
+	status = "ok";
+};
+
 &timer2 {
 	status = "ok";
 };
@@ -121,7 +131,7 @@
 &flash0 {
 	/*
 	 * For more information, see:
-	 * http://docs.zephyrproject.org/devices/dts/flash_partitions.html
+	 * http://docs.zephyrproject.org/latest/guides/dts/index.html#flash-partitions
 	 */
 	partitions {
 		compatible = "fixed-partitions";

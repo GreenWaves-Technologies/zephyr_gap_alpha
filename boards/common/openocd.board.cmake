@@ -1,5 +1,7 @@
-set_ifndef(BOARD_FLASH_RUNNER openocd)
-set_ifndef(BOARD_DEBUG_RUNNER openocd)
+# SPDX-License-Identifier: Apache-2.0
+
+board_set_flasher_ifnset(openocd)
+board_set_debugger_ifnset(openocd)
 
 # "load_image" or "flash write_image erase"?
 if(CONFIG_X86 OR CONFIG_ARC)

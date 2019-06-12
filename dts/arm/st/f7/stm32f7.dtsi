@@ -19,12 +19,15 @@
 			device_type = "cpu";
 			compatible = "arm,cortex-m7";
 			reg = <0>;
-		};
-	};
+			#address-cells = <1>;
+			#size-cells = <1>;
 
-	sram0: memory@20000000 {
-		device_type = "memory";
-		compatible = "mmio-sram";
+			mpu: mpu@e000ed90 {
+				compatible = "arm,armv7m-mpu";
+				reg = <0xe000ed90 0x40>;
+				arm,num-mpu-regions = <8>;
+			};
+		};
 	};
 
 	soc {
@@ -138,6 +141,13 @@
 				clocks = <&rcc STM32_CLOCK_BUS_AHB1 0x00000100>;
 				label = "GPIOI";
 			};
+		};
+
+		iwdg: watchdog@40003000 {
+			compatible = "st,stm32-watchdog";
+			reg = <0x40003000 0x400>;
+			label = "IWDG";
+			status = "disabled";
 		};
 
 		usart1: serial@40011000 {
@@ -315,6 +325,18 @@
 			interrupts = <86 5>;
 			status = "disabled";
 			label = "SPI_6";
+		};
+
+		can1: can@40006400 {
+			compatible = "st,stm32-can";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x40006400 0x400>;
+			interrupts = <19 0>, <20 0>, <21 0>, <22 0>;
+			interrupt-names = "TX", "RX0", "RX1", "SCE";
+			clocks = <&rcc STM32_CLOCK_BUS_APB1 0x02000000>;
+			status = "disabled";
+			label = "CAN_1";
 		};
 
 		timers1: timers@40010000 {
@@ -571,9 +593,19 @@
 			compatible = "st,stm32-rtc";
 			reg = <0x40002800 0x300>;
 			interrupts = <41 0>;
+			clocks = <&rcc STM32_CLOCK_BUS_APB1 0x10000000>;
 			prescaler = <32768>;
 			status = "disabled";
 			label = "RTC_0";
+		};
+
+		adc1: adc@40012000 {
+			compatible = "st,stm32-adc";
+			reg = <0x40012000 0x400>;
+			clocks = <&rcc STM32_CLOCK_BUS_APB2 0x00000100>;
+			interrupts = <18 0>;
+			status = "disabled";
+			label = "ADC_1";
 		};
 	};
 

@@ -17,14 +17,10 @@
 
 #else
 
-#include <logging/log.h>
-LOG_MODULE_REGISTER(net_dump_http_download_sample, LOG_LEVEL_DBG);
-
 #include <net/socket.h>
 #include <kernel.h>
-#include <net/net_app.h>
 
-#include <net/buf.h>
+#include <net/net_pkt.h>
 
 #endif
 
@@ -90,6 +86,10 @@ int main(void)
 			char c;
 
 			r = recv(client, &c, 1, 0);
+			if (r == 0) {
+				goto close_client;
+			}
+
 			if (r < 0) {
 				if (errno == EAGAIN || errno == EINTR) {
 					continue;

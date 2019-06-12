@@ -12,15 +12,17 @@
  */
 
 #include <arch/x86/asm.h>
+#include <arch/x86/msr.h>
 #include <kernel_arch_data.h>
 #include <arch/cpu.h>
+#include <arch/x86/multiboot.h>
 
 	/* exports (private APIs) */
 
 	GTEXT(__start)
 
 	/* externs */
-	GTEXT(_Cstart)
+	GTEXT(z_cstart)
 
 	GDATA(_idt_base_address)
 	GDATA(_interrupt_stack)
@@ -38,16 +40,14 @@
 	GDATA(__start_time_stamp)
 #endif
 
-#ifdef CONFIG_SYS_POWER_DEEP_SLEEP
-	GTEXT(sys_resume_from_deep_sleep)
+#ifdef CONFIG_SYS_POWER_DEEP_SLEEP_STATES
+	GTEXT(_sys_resume_from_deep_sleep)
 #endif
 
 #ifdef CONFIG_REALMODE
 
 #define RM_CODE_SEG             0x8
 #define RM_DATA_SEG             0x18
-#define MSR_MTRR_DEF_TYPE       0x000002ff
-#define MTRR_ENABLE             0x00000800
 #define X86_CR0_PE              0x00000001
 #define X86_CR0_WP              0x00010000
 #define X86_CR4_PSE             0x00000010
@@ -81,9 +81,9 @@ start32:
 	mov $(X86_CR0_WP | X86_CR0_PE),%eax
 	mov %eax,%cr0
 
-	movl $MSR_MTRR_DEF_TYPE,%ecx
+	movl $X86_MTRR_DEF_TYPE_MSR,%ecx
 	rdmsr
-	or $MTRR_ENABLE,%eax
+	or $X86_MTRR_DEF_TYPE_MSR_ENABLE,%eax
 	wrmsr
 
 	mov $RM_DATA_SEG,%eax
@@ -139,6 +139,28 @@ gdt_ptr:
 	.balign 16,0x90
 
 SECTION_FUNC(TEXT_START, __start)
+
+#ifdef CONFIG_X86_MULTIBOOT_INFO
+	/*
+	 * If we were loaded by a multiboot-compliant loader, then EAX
+	 * contains X86_MULTIBOOT_EAX_MAGIC and EBX points to a 'struct
+	 * x86_multiboot_info' somewhere in memory that the kernel load
+	 * image doesn't claim. Since the kernel will consider such memory
+	 * "free", we must copy the contents of the struct before the kernel
+	 * decides to use that RAM for something else. However, we can't
+	 * effect the copy until after the BSS is initialized.
+	 *
+	 * EBX isn't touched until the copy is made; even function calls will
+	 * preserve it (it's callee-save in the SysV ABI). But EAX will be
+	 * clobbered, so we check for the magic now and leave a sentinel in
+	 * EBX (0) if the multiboot data isn't valid.
+	 */
+
+	cmpl $X86_MULTIBOOT_EAX_MAGIC, %eax
+	je 1f
+	xorl %ebx, %ebx
+1:
+#endif
 
 #ifdef CONFIG_BOOT_TIME_MEASUREMENT
 	/*
@@ -247,7 +269,7 @@ __csSet:
 	/*
 	 * Set the stack pointer to the area used for the interrupt stack.
 	 * Note this stack is used during the execution of __start() and
-	 * _Cstart() until the multi-tasking kernel is initialized.  The
+	 * z_cstart() until the multi-tasking kernel is initialized.  The
 	 * dual-purposing of this area of memory is safe since
 	 * interrupts are disabled until the first context switch.
 	 *
@@ -255,13 +277,13 @@ __csSet:
 	 * the ISR stack size are some multiple of STACK_ALIGN, which
 	 * is at least 4.
 	 *
-	 * This is also used to call the sys_resume_from_deep_sleep()
+	 * This is also used to call the _sys_resume_from_deep_sleep()
 	 * routine to avoid memory corruption if the system is resuming from
-	 * deep sleep. It is important that sys_resume_from_deep_sleep()
+	 * deep sleep. It is important that _sys_resume_from_deep_sleep()
 	 * restores the stack pointer to what it was at deep sleep before
          * enabling interrupts.  This is necessary to avoid
 	 * interfering with interrupt handler use of this stack.
-	 * If it is a cold boot then sys_resume_from_deep_sleep() should
+	 * If it is a cold boot then _sys_resume_from_deep_sleep() should
 	 * not do anything and must return immediately.
 	 */
 #ifdef CONFIG_INIT_STACKS
@@ -284,10 +306,10 @@ __csSet:
 #else
 	addl	$CONFIG_ISR_STACK_SIZE, %esp
 #endif
-#if defined(CONFIG_SYS_POWER_DEEP_SLEEP) && \
+#if defined(CONFIG_SYS_POWER_DEEP_SLEEP_STATES) && \
              !defined(CONFIG_BOOTLOADER_CONTEXT_RESTORE)
 	/*
-	 * Invoke sys_resume_from_deep_sleep() hook to handle resume from
+	 * Invoke _sys_resume_from_deep_sleep() hook to handle resume from
 	 * deep sleep. It should first check whether system is recovering from
 	 * deep sleep state. If it is, then this function should restore
 	 * states and resume at the point system went to deep sleep.
@@ -298,7 +320,7 @@ __csSet:
 	 * return and execution falls through to cold boot path.
 	 */
 
-	call sys_resume_from_deep_sleep
+	call _sys_resume_from_deep_sleep
 
 #endif
 
@@ -314,13 +336,13 @@ __csSet:
 
 	call	_x86_data_copy
 
-#ifdef CONFIG_APPLICATION_MEMORY
-	movl	$__app_data_ram_start, %edi /* DATA in RAM (dest) */
-	movl	$__app_data_rom_start, %esi /* DATA in ROM (src) */
-	movl	$__app_data_num_words, %ecx /* Size of DATA in quad bytes */
+#ifdef CONFIG_USERSPACE
+	movl	$_app_smem_start, %edi /* DATA in RAM (dest) */
+	movl	$_app_smem_rom_start, %esi /* DATA in ROM (src) */
+	movl	$_app_smem_num_words, %ecx /* Size of DATA in quad bytes */
 
 	call	_x86_data_copy
-#endif /* CONFIG_APPLICATION_MEMORY */
+#endif /* CONFIG_USERSPACE */
 
 #endif /* CONFIG_XIP */
 
@@ -340,12 +362,6 @@ __csSet:
 	call	_x86_bss_zero
 #endif /* CONFIG_COVERAGE_GCOV */
 
-#ifdef CONFIG_APPLICATION_MEMORY
-	movl	$__app_bss_start, %edi		/* load app BSS start address */
-	movl	$__app_bss_num_words, %ecx	/* number of quad bytes */
-	call	_x86_bss_zero
-#endif
-
 #ifdef CONFIG_GDT_DYNAMIC
 	/* activate RAM-based Global Descriptor Table (GDT) */
 	lgdt	%ds:_gdt
@@ -354,15 +370,10 @@ __csSet:
 #ifdef CONFIG_X86_MMU
 
 	/* load the page directory address into the registers*/
-	movl $__mmu_tables_start, %eax
+	movl $z_x86_kernel_pdpt, %eax
 	movl %eax, %cr3
 
-#ifndef CONFIG_X86_PAE_MODE
-	/*Set CR4.PAE = 0 (5th bit in CR4*/
-	movl %cr4, %eax
-	andl $CR4_PAE_DISABLE, %eax
-	movl %eax, %cr4
-#else
+	/* Enable PAE */
 	movl %cr4, %eax
 	orl $CR4_PAE_ENABLE, %eax
 	movl %eax, %cr4
@@ -372,7 +383,7 @@ __csSet:
 	rdmsr
 	orl $0x800, %eax
 	wrmsr
-#endif
+
 	/* Enable paging (CR0.PG, bit 31) / write protect (CR0.WP, bit 16) */
 	movl %cr0, %eax
 	orl $CR0_PG_WP_ENABLE, %eax
@@ -386,9 +397,37 @@ __csSet:
 #endif
 	lidt	z_x86_idt		/* load 32-bit operand size IDT */
 
+#if defined(CONFIG_X86_MULTIBOOT_INFO)
+	/*
+	 * If EBX isn't 0, then it points to a valid boot information
+	 * struct. Copy it to x86_multiboot_info before it's overwritten.
+	 */
+
+	testl	%ebx, %ebx
+	jz	1f
+	movl	$__X86_MULTIBOOT_INFO_SIZEOF, %ecx
+	movl	%ebx, %esi
+	movl	$x86_multiboot_info, %edi
+	cld	/* to be safe. should still be 0 from BSS clear, though */
+	rep
+	movsb
+1:
+#endif
+
+#if defined(CONFIG_PIC_DISABLE)
+	/*
+	 * "Disable" legacy i8259 interrupt controllers. Note that we
+	 * can't actually disable them, but we mask all their interrupt
+	 * sources which is effectively the same thing (almost).
+	 */
+	movb $0xff, %al		/* all bits set = mask all interrupts */
+	outb %al, $0x21		/* set i8259 master mask (IRQs 0-7) */
+	outb %al, $0xA1		/* set i8259 slave mask (IRQs 8-15) */
+#endif
+
 	/* Jump to C portion of kernel initialization and never return */
 
-	jmp	_Cstart
+	jmp	z_cstart
 
 
 _x86_bss_zero:
@@ -477,36 +516,28 @@ z_x86_idt:
 	.long	_idt_base_address		/* physical start address */
 
 
-#ifdef CONFIG_BOOTLOADER_UNKNOWN
-	/* Multiboot header definition is needed for some bootloaders */
-
+#ifdef CONFIG_X86_MULTIBOOT
 	/*
 	 * The multiboot header must be in the first 8 Kb of the kernel image
 	 * (not including the ELF section header(s)) and be aligned on a
-	 * 4 byte boundary.
+	 * 4 byte boundary. See include/arch/x86/multiboot.h for more info.
 	 */
 
 	.balign 4,0x90
 
-	.long	0x1BADB002	/* multiboot magic number */
+	.long	X86_MULTIBOOT_HEADER_MAGIC
+	.long	X86_MULTIBOOT_HEADER_FLAGS
+	.long	-(X86_MULTIBOOT_HEADER_MAGIC + X86_MULTIBOOT_HEADER_FLAGS)
 
-	/*
-	 * Flags = no bits are being set, specifically bit 16 is not being
-	 * set since the supplied kernel image is an ELF file, and the
-	 * multiboot loader shall use the information from the program and
-	 * section header to load and boot the kernel image.
-	 */
+#ifdef CONFIG_X86_MULTIBOOT_FRAMEBUF
+	.fill	5,4,0				/* (unused exec layout) */
+	.long	0				/* linear graphics mode */
+	.long	CONFIG_X86_MULTIBOOT_FRAMEBUF_X	/* width */
+	.long	CONFIG_X86_MULTIBOOT_FRAMEBUF_Y	/* height */
+	.long	32				/* depth */
+#endif /* CONFIG_X86_MULTIBOOT_FRAMEBUF */
 
-	.long	0x00000000
-
-	/*
-	 * checksum = 32-bit unsigned value which, when added to the other
-	 * magic fields (i.e. "magic" and "flags"), must have a 32-bit
-	 * unsigned sum of zero.
-	 */
-
-	.long	-(0x1BADB002 + 0)
-#endif /* CONFIG_BOOTLOADER_UNKNOWN */
+#endif /* CONFIG_X86_MULTIBOOT */
 
 #ifdef CONFIG_SET_GDT
 
