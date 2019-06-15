@@ -24,6 +24,7 @@
 #include "hal/maestro/pmu_v1.h"
 #include "hal/cluster_ctrl/cluster_ctrl_v2.h"
 #include "hal/fll/fll_v1.h"
+#include "hal/gpio/gpio_v2.h"
 
 #include "hal/udma/udma_v2.h"
 #include "hal/udma/cpi/udma_cpi_v1.h"

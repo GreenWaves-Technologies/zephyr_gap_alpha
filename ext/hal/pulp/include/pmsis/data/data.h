@@ -28,7 +28,10 @@ struct pi_cluster_task_implem
 struct pi_task_implem
 {
   int kpoll;
-  struct k_work workitem;
+  union {
+  	struct k_work workitem;
+  	struct k_delayed_work delayed_workitem;
+  };
   struct k_poll_event event;
   struct k_poll_signal signal;
   struct pi_task *next;

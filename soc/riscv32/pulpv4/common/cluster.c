@@ -105,6 +105,7 @@ int pi_cluster_open(struct pi_device *cluster_dev)
 
 void task_init(pi_task_t *task)
 {
+  task->done = 0;
   task->implem.kpoll = 1;
   k_poll_signal_init(&task->implem.signal);
 
@@ -118,7 +119,7 @@ int pi_cluster_close(struct pi_device *cluster_dev)
 }
 
 
-void pi_wait_on_task(struct pi_task *task)
+void pi_task_wait_on(struct pi_task *task)
 {
   while(!task->done)
   {
@@ -130,7 +131,7 @@ void pi_wait_on_task(struct pi_task *task)
 struct pi_task *pi_task_callback(struct pi_task *task, void (*callback)(void*), void *arg)
 {
   __rt_task_create(task);
-  task->id = FC_TASK_CALLBACK_ID;
+  task->id = PI_TASK_CALLBACK_ID;
   task->arg[0] = (uint32_t)callback;
   task->arg[1] = (uint32_t)arg;
   return task;

@@ -67,7 +67,7 @@ void __rt_event_handle_end_of_task(pi_task_t *task);
 static inline struct pi_task *pi_task(struct pi_task *task)
 {
   __rt_task_create(task);
-  task->id = FC_TASK_NONE_ID;
+  task->id = PI_TASK_NONE_ID;
   task->arg[0] = (uint32_t)0;
   return task;
 }
