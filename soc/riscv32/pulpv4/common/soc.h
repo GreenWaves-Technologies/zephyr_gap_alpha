@@ -49,8 +49,9 @@
  * Default MSTATUS register value to restore from stack
  * upon scheduling a thread for the first time
  */
+#define RI5CY_MSTATUS_MPP_M        (0x3U << 11)
 #define RI5CY_MSTATUS_MPIE_EN      (1U << 7)
-#define SOC_MSTATUS_DEF_RESTORE    RI5CY_MSTATUS_MPIE_EN
+#define SOC_MSTATUS_DEF_RESTORE    (RI5CY_MSTATUS_MPP_M | RI5CY_MSTATUS_MPIE_EN)
 
 /* SOC-specific MCAUSE bitfields */
 #define SOC_MCAUSE_EXP_MASK        0x1F           /* Exception code Mask */

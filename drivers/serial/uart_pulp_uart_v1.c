@@ -62,7 +62,7 @@ static int uart_pulp_init(struct device *dev)
 
 	pulp_soc_eu_register_udma_callback(UDMA_EVENT_ID(udma_periph)+1, uart_pulp_udma_tx_handler, dev);
 
-  int div =  (50000000 + 625000/2) / 625000;
+  int div =  (50000000 + 115200/2) / 115200;
 
   // The counter in the UDMA will count from 0 to div included
   // and then will restart from 0, so we must give div - 1 as
