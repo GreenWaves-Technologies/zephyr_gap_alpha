@@ -47,6 +47,8 @@ typedef struct {
 
 void __pi_handle_waiting_copy(pi_task_t *task);
 
+void __rt_spi_handle_repeat(void *arg);
+
 
 #ifndef __RT_SPIM_COPY_ASM
 
