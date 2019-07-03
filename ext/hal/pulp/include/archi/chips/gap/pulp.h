@@ -21,6 +21,7 @@
 #include "archi/chips/gap/properties.h"
 #include "archi/chips/gap/memory_map.h"
 #include "archi/chips/gap/apb_soc.h"
+#include "archi/dma/mchan_v6.h"
 
 #include "archi/fll/fll_v1.h"
 #include "archi/riscv/pcer_v1.h"

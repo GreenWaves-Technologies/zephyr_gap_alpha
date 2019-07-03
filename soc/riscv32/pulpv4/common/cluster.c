@@ -183,11 +183,6 @@ void __rt_cluster_push_fc_event(struct pi_task *event)
   eu_mutex_unlock(eu_mutex_addr(0));
 }
 
-void pi_yield()
-{
-  k_yield();
-}
-
 
 
 static const struct cluster_config cluster_cfg = {

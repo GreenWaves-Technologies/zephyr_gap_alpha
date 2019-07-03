@@ -35,6 +35,11 @@ static inline void pmsis_exit(int err)
   __platform_exit(err);
 }
 
+static inline void pi_yield()
+{
+  k_yield();
+}
+
 
 #endif
 

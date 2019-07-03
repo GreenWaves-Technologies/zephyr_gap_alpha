@@ -21,6 +21,7 @@
 #include "pmsis/implem/perf.h"
 #include "pmsis/implem/udma.h"
 #include "pmsis/implem/cpi.h"
+#include "pmsis/implem/dma.h"
 #include "pmsis_implem.h"
 
 #include "pulprt_wrapper.h"
