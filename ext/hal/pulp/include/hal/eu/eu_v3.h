@@ -39,13 +39,7 @@
 static inline unsigned int evt_read32(unsigned int base, unsigned int offset)
 {
   unsigned int value;
-  #if 0
   value = __builtin_pulp_event_unit_read((int *)base, offset);
-  #else
-  __asm__ __volatile__ ("" : : : "memory");
-  value = pulp_read32(base + offset);
-  __asm__ __volatile__ ("" : : : "memory");
-  #endif
   return value;
 }
 #else

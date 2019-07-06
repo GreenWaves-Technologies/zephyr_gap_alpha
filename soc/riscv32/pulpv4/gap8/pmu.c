@@ -4,6 +4,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <kernel.h>
+#include <init.h>
+#include <irq.h>
+#include <soc.h>
+#include <device.h>
 #include <hal/pulp.h>
 
 #define HAL_FLL_STATUS_OFFSET        0
@@ -152,6 +157,13 @@ typedef union {
 #define ALPHA_PREC 16
 #define BETA_PREC 5
 
+/* Maestro internal events */
+#define MAESTRO_EVENT_ICU_OK            (1<<0)
+#define MAESTRO_EVENT_ICU_DELAYED       (1<<1)
+#define MAESTRO_EVENT_MODE_CHANGED      (1<<2)
+#define MAESTRO_EVENT_PICL_OK           (1<<3)
+#define MAESTRO_EVENT_SCU_OK            (1<<4)
+
 typedef struct {
   unsigned char State;
   unsigned char FllClusterDown;
@@ -162,6 +174,7 @@ typedef struct {
 PMU_StateT PMUState = {0, 0, {0, 0, 0, 0}, {0, 0}};
 PMU_RetentionStateT PMURetentionState;
 unsigned int FllsFrequency[N_FLL];
+uint32_t __pmu_soc_events = 0;
 
 
 static void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState);
@@ -186,6 +199,24 @@ static unsigned int FLL_CONFIG2_NOGAIN               = FLL_CONFIG2_VAL(0xB, 0x10
 #endif
 #endif
 
+static void wait_pmu_event(int event)
+{
+  int irq = hal_irq_disable();
+
+  event = event - ARCHI_SOC_EVENT_PMU_FIRST_EVENT;
+
+  while(!((__pmu_soc_events >> event) & 1))
+  {
+    eu_evt_wait();
+    hal_irq_enable();
+    hal_irq_disable();
+  }
+
+  __pmu_soc_events &= ~(1<<event);
+
+  hal_irq_restore(irq);
+}
+
 int cluster_power_up() // unsigned int ClusterFreq)
 {
   if (CLUSTER_STATE(PMUState.State) == CLUSTER_OFF)
@@ -206,14 +237,14 @@ int cluster_power_up() // unsigned int ClusterFreq)
         Bypass.Fields.ClusterClockGate = 1; SetPMUBypass(Bypass.Raw);
 
         /* Wait for clock gate done event */
-        //__rt_periph_wait_event(PMU_EVENT_CLUSTER_CLOCK_GATE, 1);
+        wait_pmu_event(PMU_EVENT_CLUSTER_CLOCK_GATE);
       }
 
       /* Turn on power */
       Bypass.Fields.ClusterState = 1; SetPMUBypass(Bypass.Raw);
 
       /* Wait for TRC OK event */
-      //__rt_periph_wait_event(PMU_EVENT_CLUSTER_ON_OFF, 1);
+      wait_pmu_event(PMU_EVENT_CLUSTER_ON_OFF);
 
       /* De assert Isolate on cluster */
       PMU_IsolateCluster(0);
@@ -225,7 +256,7 @@ int cluster_power_up() // unsigned int ClusterFreq)
       Bypass.Fields.ClusterClockGate = 0; SetPMUBypass(Bypass.Raw);
 
       /* Wait for clock gate done event */
-      //__rt_periph_wait_event(PMU_EVENT_CLUSTER_CLOCK_GATE, 1);
+      wait_pmu_event(PMU_EVENT_CLUSTER_CLOCK_GATE);
 
       /* Do we want to set the cluster fll ? */
       /* In case the fll is not in retentive mode we need to configure it */
@@ -248,7 +279,7 @@ int cluster_power_up() // unsigned int ClusterFreq)
 
 
 
-void cluster_power_down()
+int cluster_power_down()
 {
   //if (rt_platform() == ARCHI_PLATFORM_FPGA) return;
 
@@ -278,6 +309,7 @@ void cluster_power_down()
                 /* Wait for TRC OK event */
     //__rt_periph_wait_event(PMU_EVENT_CLUSTER_ON_OFF, 1);
   }
+  return 0;
 }
 
 static unsigned int SetFllMultDivFactors(unsigned int Freq, unsigned int *Mult, unsigned int *Div)
@@ -384,3 +416,60 @@ static void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState)
     SetFllConfiguration(WhichFll, FLL_CONFIG2, FLL_CONFIG2_NOGAIN);
   }
 }
+
+
+void  __attribute__ ((noinline)) InitFlls()
+{
+  InitOneFll(FLL_SOC, PMURetentionState.Fields.FllSoCRetention);
+  //if (PMU_ClusterIsRunning()) InitOneFll(FLL_CLUSTER, PMURetentionState.Fields.FllClusterRetention);
+}
+
+
+static int pulp_pmu_init(struct device *device)
+{
+  ARG_UNUSED(device);
+
+#if 0
+  unsigned int DCDCValue = GetDCDCSetting();
+
+  /* Build actual power state from register settings */
+  PMURetentionState.Raw = GetRetentiveState();
+  PMUState.State = RetPMUStateToPMUState[PMURetentionState.Fields.WakeupState];
+
+  PMUState.DCDC_Settings[REGU_NV]  = __builtin_bitextractu(DCDCValue, DCDC_RANGE, DCDC_Nominal*8);
+  PMUState.DCDC_Settings[REGU_LV]  = __builtin_bitextractu(DCDCValue, DCDC_RANGE, DCDC_Low*8);
+  PMUState.DCDC_Settings[REGU_RET] = __builtin_bitextractu(DCDCValue, DCDC_RANGE, DCDC_Retentive*8);
+  PMUState.DCDC_Settings[REGU_OFF] = 0;
+
+#endif
+
+  PMU_BypassT Bypass;
+  Bypass.Raw = GetPMUBypass();
+  Bypass.Fields.Bypass = 1;
+  Bypass.Fields.BypassClock = 1;
+  SetPMUBypass(Bypass.Raw);
+
+  InitFlls();
+
+  /* Setup interrupt sensibility list, we could remove icu_ok, icu_delayed and icu_mode_changed */
+  /* picl_ok and scu_ok are visible icu_ok, icu_delayed, icu_mode_changed and picl_ok are masked */
+  soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_CLUSTER_ON_OFF);
+  soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_MSP);
+  soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_ICU_MODE_CHANGED);
+  soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_ICU_OK);
+  soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_ICU_DELAYED);
+  soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_PICL_OK);
+  soc_eu_fcEventMask_setEvent(ARCHI_SOC_EVENT_SCU_OK);
+
+  /* Disable all Maestro interrupts but PICL_OK and SCU_OK */
+  PMU_Write(DLC_IMR, 0x7);
+
+  /* Clear PICL_OK and SCU_OK interrupts in case they are sat */
+  PMU_Write(DLC_IFR, (MAESTRO_EVENT_PICL_OK|MAESTRO_EVENT_SCU_OK));
+
+  return 0;
+}
+
+SYS_DEVICE_DEFINE("pmu", pulp_pmu_init, NULL,
+                PRE_KERNEL_1, 0);
+

@@ -17,6 +17,8 @@ static void (*pulp_soc_eu_udma_callbacks_args[ARCHI_SOC_EVENT_UDMA_NB_EVT])();
 static void (*pulp_soc_eu_udma_extra_callbacks[ARCHI_SOC_EVENT_UDMA_NB_EXTRA_EVT])();
 static void (*pulp_soc_eu_udma_extra_callbacks_args[ARCHI_SOC_EVENT_UDMA_NB_EXTRA_EVT])();
 
+extern uint32_t __pmu_soc_events;
+
 static void pulp_soc_eu_handle_udma_event(u32_t event)
 {
   void (*callback)(int event, void *) = pulp_soc_eu_udma_callbacks[event];
@@ -66,6 +68,10 @@ static void pulp_soc_eu_irq_handler(void *unused)
     else if (event < ARCHI_SOC_EVENT_UDMA_FIRST_EXTRA_EVT + ARCHI_SOC_EVENT_UDMA_NB_EXTRA_EVT)
     {
       pulp_soc_eu_handle_udma_extra_event(event - ARCHI_SOC_EVENT_UDMA_FIRST_EXTRA_EVT);
+    }
+    else if (event >= ARCHI_SOC_EVENT_PMU_FIRST_EVENT && event < ARCHI_SOC_EVENT_PMU_FIRST_EVENT + ARCHI_SOC_EVENT_PMU_NB_EVENTS)
+    {
+      __pmu_soc_events |= 1<<(event - ARCHI_SOC_EVENT_PMU_FIRST_EVENT);
     }
   }
 }

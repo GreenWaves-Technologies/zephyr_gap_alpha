@@ -7,6 +7,7 @@
 #include <toolchain.h>
 #include <irq.h>
 #include <soc.h>
+#include <hal/pulp.h>
 
 #include <tracing.h>
 
@@ -15,10 +16,10 @@ static ALWAYS_INLINE void gap_idle(unsigned int key)
 	z_sys_trace_idle();
 
 	/* unlock interrupts */
-	irq_unlock(key);
 
 	/* Wait for interrupt */
-	SOC_WFI;
+    eu_evt_wait();
+	irq_unlock(key);
 }
 
 /**

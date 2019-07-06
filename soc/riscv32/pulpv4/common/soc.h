@@ -81,8 +81,6 @@
 #define PULP_TIMER_A_BASE          0x1A103000
 #define PULP_TIMER_B_BASE          0x1A103010
 
-#define wfi                        wfi
-
 #ifndef _ASMLANGUAGE
 #include <irq.h>
 
@@ -111,8 +109,6 @@
 void soc_interrupt_init(void);
 #endif
 
-#define SOC_WFI                    __asm__ volatile("wfi")
-
 /* lib-c hooks required RAM defined variables */
 #define RISCV_RAM_BASE             CONFIG_DTCM_BASE_ADDRESS
 #define RISCV_RAM_SIZE             CONFIG_DTCM_SIZE
@@ -126,6 +122,8 @@ int cluster_power_up();
 int cluster_power_down();
 
 void cluster_alloc_init();
+
+void pmu_init();
 
 #endif /* !_ASMLANGUAGE */
 
