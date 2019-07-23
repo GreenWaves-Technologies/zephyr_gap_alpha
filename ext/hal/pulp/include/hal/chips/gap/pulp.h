@@ -38,4 +38,6 @@
 
 #include "hal/soc_eu/soc_eu_v1.h"
 
+#include "hal/chips/gap/apb_soc.h"
+
 #endif

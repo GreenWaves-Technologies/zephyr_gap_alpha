@@ -151,10 +151,6 @@ void pi_open_from_conf(struct pi_device *device, void *conf)
   device->config = conf;
 }
 
-static inline void apb_soc_status_set(unsigned int value) {
-  pulp_write32(ARCHI_APB_SOC_CTRL_ADDR + APB_SOC_CORESTATUS_OFFSET, value | (1<<APB_SOC_STATUS_EOC_BIT));
-}
-
 void __platform_exit(int err)
 {
   apb_soc_status_set(err);
