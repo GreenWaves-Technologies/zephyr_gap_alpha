@@ -46,15 +46,16 @@ int pi_gpio_pin_write(struct pi_device *device, int pin, uint32_t value);
 
 int pi_gpio_pin_read(struct pi_device *device, int pin, uint32_t *value);
 
-int pi_gpio_pin_task_add(struct pi_device *device, int pin, pi_task_t *task, pi_gpio_notif_e flags);
-
-int pi_gpio_pin_task_remove(struct pi_device *device, int pin);
-
 void pi_gpio_pin_notif_configure(struct pi_device *device, int pin, pi_gpio_notif_e flags);
+
+int pi_gpio_pin_notif_add(struct pi_device *device, int pin, pi_task_t *task);
+
+int pi_gpio_pin_notif_remove(struct pi_device *device, int pin);
 
 void pi_gpio_pin_notif_clear(struct pi_device *device, int pin);
 
 int pi_gpio_pin_notif_get(struct pi_device *device, int pin);
+
 
 int pi_gpio_mask_configure(struct pi_device *device, uint32_t mask, pi_gpio_flags_e flags);
 
@@ -62,8 +63,14 @@ int pi_gpio_mask_write(struct pi_device *device, uint32_t mask, uint32_t value);
 
 int pi_gpio_mask_read(struct pi_device *device, uint32_t mask, uint32_t *value);
 
-int pi_gpio_mask_task_add(struct pi_device *device, uint32_t mask, pi_task_t *task, pi_gpio_notif_e flags);
+void pi_gpio_mask_notif_configure(struct pi_device *device, uint32_t mask, pi_gpio_notif_e flags);
 
-int pi_gpio_mask_task_remove(struct pi_device *device, uint32_t mask);
+int pi_gpio_mask_notif_add(struct pi_device *device, uint32_t mask, pi_task_t *task);
+
+int pi_gpio_mask_notif_remove(struct pi_device *device, uint32_t mask);
+
+void pi_gpio_mask_notif_clear(struct pi_device *device, uint32_t mask);
+
+int pi_gpio_mask_notif_get(struct pi_device *device, uint32_t mask);
 
 #endif
