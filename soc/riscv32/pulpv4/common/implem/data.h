@@ -76,6 +76,7 @@ struct pi_cl_hyperram_free_req_s {
 #define L1_DATA __attribute__((section(".l1_ram")))
 #define L1_TINY_DATA __attribute__ ((tiny)) __attribute__((section(".l1_tiny_ram")))
 #define L2_DATA __attribute__((section(".l2_ram")))
+#define PI_L2 L2_DATA
 // Tiny data are not used on Zephyr, this would need to modify the linker script to support it
 #define RT_FC_TINY_DATA
 
