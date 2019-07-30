@@ -264,7 +264,7 @@ void pmsis_l1_malloc_free(void *_chunk, int size)
   rt_user_free(&alloc_l1[0], _chunk, size);
 }
 
-void *pmsis_l2_malloc(uint32_t size)
+void *pmsis_l2_malloc(int size)
 {
   return rt_user_alloc(&alloc_l2, size);
 }

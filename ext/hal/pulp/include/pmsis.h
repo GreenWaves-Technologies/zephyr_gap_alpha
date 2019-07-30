@@ -19,6 +19,7 @@
 
 
 #include "pmsis/data/data.h"
+#include "pmsis_cluster/cl_pmsis_types.h"
 
 #include "pmsis_cluster/cluster_sync/fc_to_cl_delegate.h"
 #include "pmsis_cluster/cl_malloc.h"
