@@ -246,3 +246,14 @@ void soc_interrupt_init(void)
 	__asm__ volatile("csrw mtvec, %0" : : "r" (0x1c000000));
 }
 #endif
+
+
+int disable_irq(void)
+{
+  return irq_lock();
+}
+
+void restore_irq(int irq_enable)
+{
+  irq_unlock(irq_enable);
+}

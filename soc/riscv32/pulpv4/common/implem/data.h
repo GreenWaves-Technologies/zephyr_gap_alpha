@@ -18,6 +18,7 @@
 #ifndef __RT_IMPLEM_DATA_H__
 #define __RT_IMPLEM_DATA_H__
 
+#include "pmsis/data/data.h"
 #include "pmsis/task.h"
 
 /// @cond IMPLEM
