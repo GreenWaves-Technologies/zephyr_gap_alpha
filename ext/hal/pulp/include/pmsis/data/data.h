@@ -42,6 +42,15 @@ struct pi_task_implem
 #define PI_TASK_IMPLEM struct pi_task_implem implem
 #define PMSIS_NO_INLINE_INCLUDE
 
+typedef struct pi_task{
+    // Warning, might be accessed inline in asm, and thus can not be moved
+    uintptr_t arg[4];
+    volatile int8_t done;
+    pi_sem_t wait_on;
+    int id;
+    PI_TASK_IMPLEM;
+} pi_task_t;
+
 #include "pmsis/data/udma.h"
 #include "pmsis/data/cpi.h"
 #include "pmsis/data/spi.h"

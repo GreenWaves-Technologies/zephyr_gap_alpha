@@ -18,6 +18,7 @@
 #define __RT_IMPLEM_CLUSTER_H__
 
 #include "hal/eu/eu_v3.h"
+#include "pmsis/cluster/cl_malloc.h"
 
 static inline void *rt_alloc_cluster_wait(pi_cl_alloc_req_t *req)
 {

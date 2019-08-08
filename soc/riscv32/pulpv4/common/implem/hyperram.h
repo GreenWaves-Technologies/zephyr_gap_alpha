@@ -17,7 +17,7 @@
 #ifndef __RT_IMPLEM_HYPERRAM_H__
 #define __RT_IMPLEM_HYPERRAM_H__
 
-
+#include "pmsis/drivers/hyperbus.h"
 #include "hal/eu/eu_v3.h"
 
 extern void __cl_hyper_cluster_copy(struct pi_device *device,

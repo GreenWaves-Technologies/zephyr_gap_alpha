@@ -18,6 +18,8 @@
 #ifndef __RT_IMPLEM_DATA_H__
 #define __RT_IMPLEM_DATA_H__
 
+#include "pmsis/task.h"
+
 /// @cond IMPLEM
 
 struct pi_cl_alloc_req_s {
