@@ -181,26 +181,27 @@ SECTIONS
 
      GROUP_END(RAMABLE_REGION)
 
-  SECTION_DATA_PROLOGUE(l2_ram,(NOLOAD),)
+  SECTION_DATA_PROLOGUE(l2_ram,,)
   {
      *(.l2_ram)
      *(".l2_ram.*")
-  }  GROUP_LINK_IN(L2_RAM)
+  } GROUP_LINK_IN(L2_RAM)
 
-  __l2_heap_start = ALIGN(4);
-  __l2_heap_size = LENGTH(L2_RAM) - __l2_heap_start + ORIGIN(L2_RAM);
-
-  SECTION_DATA_PROLOGUE(l1_tiny_ram,(NOLOAD),)
+  SECTION_DATA_PROLOGUE(l1_tiny_ram,,)
   {
      *(.l1_tiny_ram)
      *(".l1_tiny_ram.*")
-  }  GROUP_LINK_IN(L1_ALIAS_RAM)
+  } GROUP_LINK_IN(L1_ALIAS_RAM AT> L2_RAM)
 
   SECTION_DATA_PROLOGUE(l1_ram,(ORIGIN(L1_RAM) + SIZEOF(l1_tiny_ram)),)
   {
      *(.l1_ram)
      *(".l1_ram.*")
-  }  GROUP_LINK_IN(L1_RAM)
+    . = ALIGN(4);
+  }  GROUP_LINK_IN(L1_RAM AT> L2_RAM)
+
+  __l2_heap_start = LOADADDR(l1_ram) + SIZEOF(l1_ram);
+  __l2_heap_size = LENGTH(L2_RAM) - __l2_heap_start + ORIGIN(L2_RAM);
 
   __l1_heap_start = ALIGN(4);
   __l1_heap_size = LENGTH(L1_RAM) - __l1_heap_start + ORIGIN(L1_RAM);

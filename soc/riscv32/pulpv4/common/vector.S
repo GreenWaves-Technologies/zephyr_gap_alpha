@@ -5,6 +5,7 @@
  */
 
 #include <toolchain.h>
+#include <archi/pulp.h>
 
 /* exports */
 GTEXT(__cluster_start)
@@ -26,7 +27,7 @@ GTEXT(__irq_wrapper)
 	/* Call __reset for reset vector */
 	.org 0x80
 __cluster_start:
-	jal x0, __rt_pe_start
+	j __check_entry
 
 	/* Illegal instruction */
 	jal x0, __irq_wrapper
@@ -36,3 +37,11 @@ __cluster_start:
 
 	/* Invalid memory access */
 	jal x0, __irq_wrapper
+
+__check_entry:
+	csrr    a0, 0xF14
+	andi    a1, a0, 0x1f
+	srli    a0, a0, 5
+	li      a2, ARCHI_FC_CID
+	bne     a0, a2, __rt_pe_start
+	j       __reset
