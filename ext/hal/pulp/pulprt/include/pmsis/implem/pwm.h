@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 GreenWaves Technologies
+ * Copyright (C) 2018 ETH Zurich, University of Bologna and GreenWaves Technologies
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef __CL_DMA_DECOMPRESSOR_H__
-#define __CL_DMA_DECOMPRESSOR_H__
+#ifndef __PMSIS_IMPLEM_PWM_H__
+#define __PMSIS_IMPLEM_PWM_H__
 
+#ifdef PWM_VERSION
 
+#include "pmsis/drivers/pwm.h"
+
+static inline void pi_pwm_timer_start(struct pi_device *device)
+{
+    pi_pwm_ioctl(device, PI_PWM_TIMER_COMMAND, (void *) PI_PWM_CMD_START);
+}
+
+static inline void pi_pwm_timer_stop(struct pi_device *device)
+{
+    pi_pwm_ioctl(device, PI_PWM_TIMER_COMMAND, (void *) PI_PWM_CMD_STOP);
+}
+
+#endif
 
 #endif

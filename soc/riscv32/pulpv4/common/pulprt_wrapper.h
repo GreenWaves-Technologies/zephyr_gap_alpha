@@ -9,6 +9,7 @@
 
 #include "soc.h"
 #include "alloc.h"
+#include "cluster.h"
 
 static inline void __rt_udma_register_channel_callback(int channel, void (*callback)(int event, void *), void *arg)
 {
@@ -22,16 +23,6 @@ static inline void __rt_udma_register_extra_callback(unsigned int event, void (*
 
 static inline void __rt_udma_channel_reg_data(int channel_id, void *data)
 {
-}
-
-static inline void __rt_task_init(pi_task_t *task)
-{
-  task->done = 0;
-}
-
-static inline void __rt_task_create(pi_task_t *task)
-{
-  task_init(task);
 }
 
 static inline void __rt_task_init_from_cluster(pi_task_t *task)

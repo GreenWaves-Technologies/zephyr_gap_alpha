@@ -135,6 +135,7 @@ void pmu_init();
 #define RT_CLUSTER_CALL_EVT 1
 
 #define RT_FC_ENQUEUE_EVENT 1
+#define RT_DMA_EVENT 5
 
 #define RT_CLUSTER_TASK_ENTRY                 (0*4)
 #define RT_CLUSTER_TASK_ARG                   (1*4)

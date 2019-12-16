@@ -83,5 +83,6 @@ struct pi_cl_hyperram_free_req_s {
 #define PI_L1 L1_DATA
 // Tiny data are not used on Zephyr, this would need to modify the linker script to support it
 #define RT_FC_TINY_DATA
+#define RT_L1_TINY_DATA L1_TINY_DATA
 
 #endif

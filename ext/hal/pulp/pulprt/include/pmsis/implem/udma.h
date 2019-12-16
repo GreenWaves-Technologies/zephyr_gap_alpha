@@ -25,4 +25,6 @@ extern void __rt_udma_channel_init(int channel_id, rt_udma_channel_t *channel);
 
 extern void __rt_udma_copy_enqueue(pi_task_t *task, int channel_id, rt_udma_channel_t *channel, uint32_t buffer, uint32_t size, uint32_t cfg);
 
+extern void __rt_udma_handle_copy(int event, void *arg);
+
 #endif

@@ -177,27 +177,11 @@ unsigned int FllsFrequency[N_FLL];
 uint32_t __pmu_soc_events = 0;
 
 
+static inline int      PMU_ClusterIsRunning() { return (CLUSTER_STATE(PMUState.State)==CLUSTER_ON);}
+
+
 static void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState);
 
-#define FLL_CONFIG1_VAL(Mult, DCOIn, Div, OutLockE, Mode) ((Mult)|((DCOIn)<<(16))|((Div)<<(16+10))|((OutLockE)<<(16+10+4))|((Mode)<<(16+10+4+1)))
-static unsigned int FLL_CONFIG1_DEF_NOLOCK       = FLL_CONFIG1_VAL(0, 0, 0, 0, 1);
-//static unsigned int FLL_CONFIG1_DEF_LOCK         = FLL_CONFIG1_VAL(0, 0, 0, 1, 1);
-//static unsigned int FLL_CONFIG1_DEF_OPEN_LOOP_LOCK   = FLL_CONFIG1_VAL(0, 0, 0, 1, 0);
-#define FLL_CONFIG2_VAL(Gain, Deassert, Assert, LockTol, ClkSel, OpenLoop, Dither) ((Gain)|((Deassert)<<4)|((Assert)<<(4+6))|((LockTol)<<(4+6+6))|((ClkSel)<<(4+6+6+12))|((OpenLoop)<<(4+6+6+12+1+1))|((Dither)<<(4+6+6+12+1+1+1)))
-// static unsigned int FLL_CONFIG2_GAIN                 = FLL_CONFIG2_VAL(0x7, 0x10, 0x2, 0x100, 0x0, 0x0, 0x1);
-// static unsigned int FLL_CONFIG2_NOGAIN               = FLL_CONFIG2_VAL(0xF, 0x10, 0x2, 0x100, 0x0, 0x0, 0x1);
-#if 1
-static unsigned int FLL_CONFIG2_GAIN                 = FLL_CONFIG2_VAL(0x7, 0x10, 0x10, 0x100, 0x0, 0x0, 0x1);
-static unsigned int FLL_CONFIG2_NOGAIN               = FLL_CONFIG2_VAL(0xB, 0x10, 0x10, 0x100, 0x0, 0x0, 0x1);
-#else
-#if 0
-static unsigned int FLL_CONFIG2_GAIN                 = FLL_CONFIG2_VAL(0xB, 0x10, 0x10, 0x100, 0x0, 0x0, 0x1);
-static unsigned int FLL_CONFIG2_NOGAIN               = FLL_CONFIG2_VAL(0xB, 0x10, 0x10, 0x100, 0x0, 0x0, 0x1);
-#else
-static unsigned int FLL_CONFIG2_GAIN                 = FLL_CONFIG2_VAL(0xA, 0x10, 0x2, 0x100, 0x0, 0x0, 0x0);
-static unsigned int FLL_CONFIG2_NOGAIN               = FLL_CONFIG2_VAL(0xB, 0x10, 0x2, 0x100, 0x0, 0x0, 0x1); 
-#endif
-#endif
 
 static void wait_pmu_event(int event)
 {
@@ -346,7 +330,130 @@ static unsigned int GetFllFreqFromMultDivFactors(unsigned int Mult, unsigned int
 }
 
 
-static void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState)
+#define FLL_CONFIG1_VAL(Mult, DCOIn, Div, OutLockE, Mode) ((Mult)|((DCOIn)<<(16))|((Div)<<(16+10))|((OutLockE)<<(16+10+4))|((Mode)<<(16+10+4+1)))
+static unsigned int FLL_CONFIG1_DEF_NOLOCK       = FLL_CONFIG1_VAL(0, 0, 0, 0, 1);
+#if PULP_CHIP != CHIP_GAP
+static unsigned int FLL_CONFIG1_DEF_LOCK         = FLL_CONFIG1_VAL(0, 0, 0, 1, 1);
+#endif
+#ifdef PRIME_FLL
+static unsigned int FLL_CONFIG1_DEF_OPEN_LOOP_LOCK   = FLL_CONFIG1_VAL(0, 0, 0, 1, 0);
+#endif
+#define FLL_CONFIG2_VAL(Gain, Deassert, Assert, LockTol, ClkSel, OpenLoop, Dither) ((Gain)|((Deassert)<<4)|((Assert)<<(4+6))|((LockTol)<<(4+6+6))|((ClkSel)<<(4+6+6+12))|((OpenLoop)<<(4+6+6+12+1+1))|((Dither)<<(4+6+6+12+1+1+1)))
+// static unsigned int FLL_CONFIG2_GAIN                 = FLL_CONFIG2_VAL(0x7, 0x10, 0x2, 0x100, 0x0, 0x0, 0x1);
+// static unsigned int FLL_CONFIG2_NOGAIN               = FLL_CONFIG2_VAL(0xF, 0x10, 0x2, 0x100, 0x0, 0x0, 0x1);
+#if 1
+static unsigned int FLL_CONFIG2_GAIN                 = FLL_CONFIG2_VAL(0x7, 0x10, 0x10, 0x100, 0x0, 0x0, 0x1);
+static unsigned int FLL_CONFIG2_NOGAIN               = FLL_CONFIG2_VAL(0xB, 0x10, 0x10, 0x100, 0x0, 0x0, 0x1);
+#else
+#if 0
+static unsigned int FLL_CONFIG2_GAIN                 = FLL_CONFIG2_VAL(0xB, 0x10, 0x10, 0x100, 0x0, 0x0, 0x1);
+static unsigned int FLL_CONFIG2_NOGAIN               = FLL_CONFIG2_VAL(0xB, 0x10, 0x10, 0x100, 0x0, 0x0, 0x1);
+#else
+static unsigned int FLL_CONFIG2_GAIN                 = FLL_CONFIG2_VAL(0xA, 0x10, 0x2, 0x100, 0x0, 0x0, 0x0);
+static unsigned int FLL_CONFIG2_NOGAIN               = FLL_CONFIG2_VAL(0xB, 0x10, 0x2, 0x100, 0x0, 0x0, 0x1); 
+#endif
+#endif
+
+unsigned int SetFllFrequency(hal_fll_e Fll, unsigned int Frequency, int Check)
+
+{
+  if (Fll == FLL_CLUSTER && !PMU_ClusterIsRunning()) return 0;
+  FllConfigT Config;
+  unsigned int SetFrequency, Mult, Div;
+#ifdef PRIME_FLL
+  unsigned int DCOIn;
+#endif
+
+  SetFrequency = SetFllMultDivFactors(Frequency, &Mult, &Div);
+
+#ifdef PRIME_FLL
+/* Force convergence in Open Loop with estimated DCO input */
+  DCOIn = EstimateDCOInputCode(Fll, Mult);
+  Config.Raw = FLL_CONFIG1_DEF_OPEN_LOOP_LOCK;
+  Config.ConfigReg1.DCOInput = DCOIn;
+  Config.ConfigReg1.ClockOutDivider = 0;
+  SetFllConfiguration(Fll, FLL_CONFIG1, (unsigned int) Config.Raw);
+#endif
+
+#if PULP_CHIP == CHIP_GAP
+
+/* Return to close loop mode and give gain to feedback loop */
+  SetFllConfiguration(Fll, FLL_CONFIG2, FLL_CONFIG2_GAIN);
+
+  Config.Raw = FLL_CONFIG1_DEF_NOLOCK; // CHANGE WITHOUT BLOCKING THE FLL OUT
+  Config.ConfigReg1.MultFactor = Mult;
+  Config.ConfigReg1.ClockOutDivider = Div;
+  SetFllConfiguration(Fll, FLL_CONFIG1, (unsigned int) Config.Raw);
+
+#if 1
+      /* Check FLL converge by compare status register with multiply factor */
+
+  // We set tolerance to Mult/20 to get a precision of 5% against specified freq
+  int tolerance = Mult / 20;
+
+  do {
+    int mult_factor_diff = hal_fll_status_reg_get(Fll) - Mult;
+    if (mult_factor_diff < 0)
+      mult_factor_diff = -mult_factor_diff;
+
+    if ( mult_factor_diff <= tolerance)
+      break;
+
+  } while (1);
+
+#else
+/* Wait for convergence, since we will disable lock enable after this step is mandatory */
+  if (Config.ConfigReg1.OutputLockEnable) {
+    if (Fll == FLL_CLUSTER && hal_is_fc()) {
+     while (ClusterFllConverged() == 0) {};
+    } else if (Fll == FLL_SOC && !hal_is_fc()) {
+     while (SoCFllConverged() == 0) {};
+    }
+  }
+#endif
+
+  FllsFrequency[Fll] = SetFrequency;
+  PMUState.Frequency[Fll] = SetFrequency;
+
+  /* Disable lock enable since we are stable now and removed gain from feed back loop */
+  if (Config.ConfigReg1.OutputLockEnable) {
+      Config.ConfigReg1.OutputLockEnable = 0;
+          SetFllConfiguration(Fll, FLL_CONFIG1, (unsigned int) Config.Raw);
+          } 
+  SetFllConfiguration(Fll, FLL_CONFIG2, FLL_CONFIG2_NOGAIN);
+
+#else
+
+  Config.Raw = FLL_CONFIG1_DEF_NOLOCK; // CHANGE WITHOUT BLOCKING THE FLL OUT
+  Config.ConfigReg1.MultFactor = Mult;
+  Config.ConfigReg1.ClockOutDivider = Div;
+  SetFllConfiguration(Fll, FLL_CONFIG1, (unsigned int) Config.Raw);
+
+  FllsFrequency[Fll] = SetFrequency;
+  PMUState.Frequency[Fll] = SetFrequency;
+
+#endif
+
+#ifdef __RT_USE_BRIDGE
+  if (Fll == FLL_SOC)
+    __rt_bridge_set_available();
+#endif
+  
+  return SetFrequency;
+}
+
+unsigned int SetFllSoCFrequency(unsigned int Frequency)
+{
+  return SetFllFrequency(FLL_SOC, Frequency, 1);
+}
+
+unsigned int SetFllClusterFrequency(unsigned int Frequency)
+{
+  if (PMU_ClusterIsRunning()) return SetFllFrequency(FLL_CLUSTER, Frequency, 1);
+  return 0;
+}
+
+void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState)
 {
   FllConfigT Config;
 
@@ -373,6 +480,8 @@ static void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState)
       SetFllConfiguration(WhichFll, FLL_INTEGRATOR, (unsigned int) Config.Raw);
     }
 
+#if PULP_CHIP == CHIP_GAP
+
     /* Lock Fll */
     // Config.Raw = FLL_CONFIG1_DEF_LOCK;
     Config.Raw = FLL_CONFIG1_DEF_NOLOCK; // CHANGE WITHOUT BLOCKING THE FLL OUT 
@@ -383,9 +492,8 @@ static void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState)
 
 #if 1
 
-  fll_reg_conf2_t fll_conf2;
-  fll_conf2.raw = hal_fll_conf_reg2_get(WhichFll);
-  int tolerance = fll_conf2.lock_tolerance;
+  // We set tolerance to Mult/20 to get a precision of 5% against specified freq
+  int tolerance = Mult/20;
 
   do {
     int mult_factor_diff = hal_fll_status_reg_get(WhichFll) - Mult;
@@ -414,9 +522,23 @@ static void InitOneFll(hal_fll_e WhichFll, unsigned int UseRetentiveState)
     PMUState.Frequency[WhichFll] = SetFrequency;
 
     SetFllConfiguration(WhichFll, FLL_CONFIG2, FLL_CONFIG2_NOGAIN);
+
+#else
+
+    /* Lock Fll */
+    Config.Raw = FLL_CONFIG1_DEF_LOCK;
+    SetFrequency = SetFllMultDivFactors(50000000, &Mult, &Div);
+    Config.ConfigReg1.MultFactor = Mult;
+    Config.ConfigReg1.ClockOutDivider = Div;
+    SetFllConfiguration(WhichFll, FLL_CONFIG1, Config.Raw);
+
+    FllsFrequency[WhichFll] = SetFrequency;
+    PMUState.Frequency[WhichFll] = SetFrequency;
+
+#endif
+
   }
 }
-
 
 void  __attribute__ ((noinline)) InitFlls()
 {

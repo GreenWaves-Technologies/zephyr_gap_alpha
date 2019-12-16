@@ -258,6 +258,7 @@ static inline int rt_nb_pe()
   return ARCHI_NB_PE;
 }
 
+
 #else
 
 static inline int rt_nb_pe()

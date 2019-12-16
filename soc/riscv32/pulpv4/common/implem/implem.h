@@ -25,6 +25,25 @@
 #include "hal/riscv/riscv_v4.h"
 
 
+static inline int pi_cl_cluster_nb_cores()
+{
+  return ARCHI_CLUSTER_NB_PE;
+}
+
+
+void task_init(pi_task_t *task);
+
+static inline void __rt_task_init(pi_task_t *task)
+{
+  task->done = 0;
+}
+
+static inline void __rt_task_create(pi_task_t *task)
+{
+  task_init(task);
+}
+
+
 static inline uint32_t pi_core_id()
 {
   return hal_core_id();

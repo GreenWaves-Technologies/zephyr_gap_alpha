@@ -47,7 +47,7 @@ static inline void pi_cl_l2_free_wait(pi_cl_free_req_t *req)
   rt_free_cluster_wait((pi_cl_free_req_t *)req);
 }
 
-static inline int cl_team_nb_cores()
+static inline int pi_cl_team_nb_cores()
 {
   return __FL1(pulp_read32(eu_bar_addr(0) + EU_HW_BARR_TRIGGER_MASK) + 1);
 }
@@ -56,7 +56,7 @@ static inline void __cl_team_barrier() {
   eu_bar_trig_wait_clr(eu_bar_addr(0));
 }
 
-static inline void cl_team_barrier() {
+static inline void pi_cl_team_barrier() {
 #ifdef __RT_USE_PROFILE
   int trace = __rt_pe_trace[pi_core_id()];
   gv_vcd_dump_trace(trace, 2);
@@ -84,7 +84,7 @@ static inline void __cl_team_config(int nb_cores) {
 
 #if !defined(ARCHI_HAS_CC)
 
-static inline void cl_team_fork(int nb_cores, void (*entry)(void *), void *arg)
+static inline void pi_cl_team_fork(int nb_cores, void (*entry)(void *), void *arg)
 {
 #ifdef __RT_USE_PROFILE
   int trace = __rt_pe_trace[pi_core_id()];
@@ -105,7 +105,7 @@ static inline void cl_team_fork(int nb_cores, void (*entry)(void *), void *arg)
 
 #else
 
-static inline void cl_team_fork(int nb_cores, void (*entry)(void *), void *arg) {
+static inline void pi_cl_team_fork(int nb_cores, void (*entry)(void *), void *arg) {
   rt_team_offload(nb_cores, entry, arg);
 
   if (nb_cores == 0)
@@ -119,7 +119,7 @@ static inline void cl_team_fork(int nb_cores, void (*entry)(void *), void *arg) 
 
 #endif
 
-static inline void cl_team_critical_enter()
+static inline void pi_cl_team_critical_enter()
 {
 #ifdef __RT_USE_PROFILE
   int trace = __rt_pe_trace[pi_core_id()];
@@ -129,7 +129,7 @@ static inline void cl_team_critical_enter()
   eu_mutex_lock(eu_mutex_addr(0));
 }
 
-static inline void cl_team_critical_exit()
+static inline void pi_cl_team_critical_exit()
 {
 #ifdef __RT_USE_PROFILE
   int trace = __rt_pe_trace[pi_core_id()];

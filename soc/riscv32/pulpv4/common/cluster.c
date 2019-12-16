@@ -12,6 +12,8 @@
 #include "alloc.h"
 #include "implem/implem.h"
 
+RT_L1_TINY_DATA pi_cl_dma_cmd_t *__rt_dma_first_pending;
+
 static inline void *cluster_tiny_addr(int cid, void *data)
 {
   // TODO due to a compiler bug, we have to cast the tiny data to avoid the propagation of the tiny attribute
@@ -62,7 +64,7 @@ static int cluster_init(struct device *device)
 
 int pi_cluster_open(struct pi_device *cluster_dev)
 {
-  struct cluster_driver_conf *conf = (struct cluster_driver_conf *)cluster_dev->config;
+  struct pi_cluster_conf *conf = (struct pi_cluster_conf *)cluster_dev->config;
 
   rt_fc_cluster_data_t *cluster = &clusters[conf->id];
   cluster_dev->data = cluster;
@@ -139,7 +141,7 @@ struct pi_task *pi_task_callback(struct pi_task *task, void (*callback)(void*), 
 
 
 
-void pi_cluster_conf_init(struct cluster_driver_conf *conf)
+void pi_cluster_conf_init(struct pi_cluster_conf *conf)
 {
   conf->id = 0;
 }

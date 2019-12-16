@@ -55,6 +55,16 @@
 #define MCHAN_VERSION       6
 #define EFUSE_VERSION       1
 #define PADS_VERSION        2
+#define PWM_VERSION         1
+
+
+/*
+ * SOC
+ */
+
+#define ARCHI_PWM_NB          1
+#define ARCHI_PWM_NB_TIMERS 4
+
 
 /*
  * CLUSTER
@@ -169,6 +179,8 @@
 
 #define ARCHI_SOC_EVENT_PERIPH_FIRST_EVT(x)     ((x)*ARCHI_SOC_EVENT_UDMA_NB_CHANNEL_EVT)
 
+#define ARCHI_SOC_EVENT_NB_TOTAL     64
+
 #define ARCHI_SOC_EVENT_I2C0_RX      10
 #define ARCHI_SOC_EVENT_I2C0_TX      11
 
@@ -249,9 +261,13 @@
  * FC EVENTS
  */
 
-#define ARCHI_FC_EVT_TIMER0_LO           10
-#define ARCHI_FC_EVT_TIMER0_HI           11
+#define ARCHI_FC_EVT_TIMER0_LO        10
+#define ARCHI_FC_EVT_TIMER0_HI        11
 #define ARCHI_FC_EVT_SOC_EVT          27
+#if PULP_CHIP == CHIP_GAP8_REVC
+#define ARCHI_FC_IRQ_HYPER_TX         29
+#define ARCHI_FC_IRQ_HYPER_RX         30
+#endif
 
 
 #endif
